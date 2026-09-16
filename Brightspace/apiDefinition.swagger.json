@@ -1,0 +1,2824 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Brightspace",
+        "description": "Dual-purpose connector for the D2L Brightspace (Valence) Developer Platform API. Exposes typed REST actions for Power Automate and Power Apps alongside an MCP endpoint that gives Copilot Studio agents progressive discovery over the whole Brightspace API through scan, launch, and sequence tools.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com",
+            "url": "https://github.com/troystaylor"
+        }
+    },
+    "host": "[YOUR_INSTITUTION].brightspace.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Brightspace MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes the Brightspace API over JSON-RPC 2.0 with progressive discovery through the scan, launch, and sequence tools, plus a version negotiation tool.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/d2l/api/versions/": {
+            "get": {
+                "summary": "Get API Versions",
+                "description": "Retrieve the latest supported API contract version for every product component in this Brightspace deployment. Call this first to confirm the version values used by the other actions are supported by your tenant.",
+                "operationId": "GetApiVersions",
+                "x-ms-visibility": "important",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Supported API versions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ApiVersion"
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/users/whoami": {
+            "get": {
+                "summary": "Get Current User",
+                "description": "Retrieve the user information for the current user context (the Brightspace user the connection is authenticated as).",
+                "operationId": "GetWhoAmI",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current user context",
+                        "schema": {
+                            "$ref": "#/definitions/WhoAmIUser"
+                        }
+                    },
+                    "403": {
+                        "description": "No permission to see whoami information for the current user context"
+                    },
+                    "404": {
+                        "description": "Could not map the current user context to a known user ID"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/users/{userId}": {
+            "get": {
+                "summary": "Get User",
+                "description": "Retrieve the data for a single user by their Brightspace user ID.",
+                "operationId": "GetUser",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Brightspace user ID (a positive 64-bit integer).",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User data",
+                        "schema": {
+                            "$ref": "#/definitions/UserData"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to retrieve this user"
+                    },
+                    "404": {
+                        "description": "No user with the provided ID"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/users/": {
+            "get": {
+                "summary": "List Users",
+                "description": "Retrieve a paged list of all users visible to the current user context. Pass the Bookmark returned in PagingInfo to fetch the next page. To look up a specific user instead, use Find User By Username or Find Users By Org Defined ID.",
+                "operationId": "ListUsers",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "bookmark",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Bookmark from the previous page's PagingInfo. Leave empty for the first page.",
+                        "x-ms-summary": "Bookmark"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of users",
+                        "schema": {
+                            "$ref": "#/definitions/UserDataPagedResultSet"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to list users"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create User",
+                "description": "Create a new user in the organization.",
+                "operationId": "CreateUser",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateUserData"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created user",
+                        "schema": {
+                            "$ref": "#/definitions/UserData"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to create users"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/users/byUsername": {
+            "get": {
+                "summary": "Find User By Username",
+                "description": "Find a single user by their Brightspace username. Returns one user record, or 404 when no user matches. The connector script rewrites this to GET /d2l/api/lp/{version}/users/?userName={userName}, which returns a single object rather than a list.",
+                "operationId": "FindUserByUsername",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "userName",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Exact Brightspace username to look up.",
+                        "x-ms-summary": "Username"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The matching user",
+                        "schema": {
+                            "$ref": "#/definitions/UserData"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to search on username"
+                    },
+                    "404": {
+                        "description": "No user matches the provided username"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/users/byOrgDefinedId": {
+            "get": {
+                "summary": "Find Users By Org Defined ID",
+                "description": "Find users by the organization-defined identifier, such as a student number. Returns an array because the identifier is not guaranteed to be unique. The connector script rewrites this to GET /d2l/api/lp/{version}/users/?orgDefinedId={orgDefinedId}.",
+                "operationId": "FindUsersByOrgDefinedId",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "orgDefinedId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Organization-defined identifier, for example a student or staff number.",
+                        "x-ms-summary": "Org Defined ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/UserData"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to search on org defined ID"
+                    },
+                    "404": {
+                        "description": "No user matches the provided org defined ID"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/organization/info": {
+            "get": {
+                "summary": "Get Organization Info",
+                "description": "Retrieve the name, identifier, and time zone of the organization.",
+                "operationId": "GetOrganizationInfo",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization information",
+                        "schema": {
+                            "$ref": "#/definitions/Organization"
+                        }
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/orgstructure/{orgUnitId}/children/paged/": {
+            "get": {
+                "summary": "Get Org Unit Children",
+                "description": "Retrieve a paged list of the immediate children of an org unit, optionally filtered to a single org unit type.",
+                "operationId": "GetOrgUnitChildren",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "ouTypeId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Filter the results to a single org unit type ID, for example the course offering type.",
+                        "x-ms-summary": "Org Unit Type ID"
+                    },
+                    {
+                        "name": "bookmark",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Bookmark from the previous page's PagingInfo. Leave empty for the first page.",
+                        "x-ms-summary": "Bookmark"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of child org units",
+                        "schema": {
+                            "$ref": "#/definitions/OrgUnitPagedResultSet"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read the org structure"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/orgstructure/{orgUnitId}/descendants/paged/": {
+            "get": {
+                "summary": "Get Org Unit Descendants",
+                "description": "Retrieve a paged list of all descendants of an org unit, optionally filtered to a single org unit type.",
+                "operationId": "GetOrgUnitDescendants",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "ouTypeId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Filter the results to a single org unit type ID, for example the course offering type.",
+                        "x-ms-summary": "Org Unit Type ID"
+                    },
+                    {
+                        "name": "bookmark",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Bookmark from the previous page's PagingInfo. Leave empty for the first page.",
+                        "x-ms-summary": "Bookmark"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of descendant org units",
+                        "schema": {
+                            "$ref": "#/definitions/OrgUnitPagedResultSet"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read the org structure"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/courses/{orgUnitId}": {
+            "get": {
+                "summary": "Get Course Offering",
+                "description": "Retrieve the details of a single course offering.",
+                "operationId": "GetCourseOffering",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course offering",
+                        "schema": {
+                            "$ref": "#/definitions/CourseOffering"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to retrieve this course offering"
+                    },
+                    "404": {
+                        "description": "No course offering with the provided org unit ID"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Course Offering",
+                "description": "Update the properties of an existing course offering.",
+                "operationId": "UpdateCourseOffering",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateCourseOffering"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The course offering was updated"
+                    },
+                    "403": {
+                        "description": "Not authorized to update this course offering"
+                    },
+                    "404": {
+                        "description": "No course offering with the provided org unit ID"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/courses/": {
+            "post": {
+                "summary": "Create Course Offering",
+                "description": "Create a new course offering from a course template.",
+                "operationId": "CreateCourseOffering",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateCourseOffering"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created course offering",
+                        "schema": {
+                            "$ref": "#/definitions/CourseOffering"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to create course offerings"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/enrollments/myenrollments/": {
+            "get": {
+                "summary": "Get My Enrollments",
+                "description": "Retrieve a paged list of the org units the current user context is enrolled in, such as the courses a student or instructor is taking or teaching.",
+                "operationId": "GetMyEnrollments",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "orgUnitTypeId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of org unit type IDs to filter by, for example the course offering type.",
+                        "x-ms-summary": "Org Unit Type IDs"
+                    },
+                    {
+                        "name": "isActive",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "Filter to only active or only inactive enrollments.",
+                        "x-ms-summary": "Is Active"
+                    },
+                    {
+                        "name": "canAccess",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "Filter to only enrollments the user can currently access.",
+                        "x-ms-summary": "Can Access",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "sortBy",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Sort key for the returned list.",
+                        "x-ms-summary": "Sort By",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "startDateTime",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Only include enrollments active on or after this UTC date-time (yyyy-MM-ddTHH:mm:ss.fffZ).",
+                        "x-ms-summary": "Start Date Time",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "endDateTime",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Only include enrollments active on or before this UTC date-time (yyyy-MM-ddTHH:mm:ss.fffZ).",
+                        "x-ms-summary": "End Date Time",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "bookmark",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Bookmark from the previous page's PagingInfo. Leave empty for the first page.",
+                        "x-ms-summary": "Bookmark"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of the current user's enrollments",
+                        "schema": {
+                            "$ref": "#/definitions/MyOrgUnitInfoPagedResultSet"
+                        }
+                    },
+                    "400": {
+                        "description": "End date-time is earlier than start date-time"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/enrollments/orgUnits/{orgUnitId}/users/": {
+            "get": {
+                "summary": "Get Org Unit Enrollments",
+                "description": "Retrieve a paged list of the users enrolled in an org unit, optionally filtered by role.",
+                "operationId": "GetOrgUnitEnrollments",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "roleId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Filter the list to a single user role, for example the student or instructor role ID.",
+                        "x-ms-summary": "Role ID"
+                    },
+                    {
+                        "name": "isActive",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "Filter to only active or only inactive users.",
+                        "x-ms-summary": "Is Active"
+                    },
+                    {
+                        "name": "bookmark",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Bookmark from the previous page's PagingInfo. Leave empty for the first page.",
+                        "x-ms-summary": "Bookmark"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of enrolled users",
+                        "schema": {
+                            "$ref": "#/definitions/OrgUnitUserPagedResultSet"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read enrollments for this org unit"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/enrollments/orgUnits/{orgUnitId}/users/{userId}": {
+            "delete": {
+                "summary": "Unenroll User",
+                "description": "Remove a user's enrollment from an org unit.",
+                "operationId": "UnenrollUser",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Brightspace user ID to unenroll.",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The enrollment was removed",
+                        "schema": {
+                            "$ref": "#/definitions/EnrollmentData"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to remove this enrollment"
+                    },
+                    "404": {
+                        "description": "No such enrollment"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/lp/{version}/enrollments/": {
+            "post": {
+                "summary": "Enroll User",
+                "description": "Enroll a user in an org unit with a specific role, for example adding a student to a course offering.",
+                "operationId": "EnrollUser",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LpVersion"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateEnrollmentData"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created enrollment",
+                        "schema": {
+                            "$ref": "#/definitions/EnrollmentData"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to create this enrollment"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/classlist/": {
+            "get": {
+                "summary": "Get Classlist",
+                "description": "Retrieve the classlist for a course offering. This route is unbounded and returns every member of the course in one response; prefer Get Org Unit Enrollments for large courses.",
+                "operationId": "GetClasslist",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Classlist members",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ClasslistUser"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to see the classlist for this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/grades/": {
+            "get": {
+                "summary": "Get Grade Objects",
+                "description": "Retrieve all grade items in a course offering's grade book.",
+                "operationId": "GetGradeObjects",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Grade objects",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GradeObject"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read grade objects for this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/grades/values/{userId}/": {
+            "get": {
+                "summary": "Get User Grades",
+                "description": "Retrieve every grade value a single user has in a course offering's grade book.",
+                "operationId": "GetUserGradeValues",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Brightspace user ID whose grades to retrieve.",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Grade values for the user",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GradeValue"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read this user's grades"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/grades/values/myGradeValues/": {
+            "get": {
+                "summary": "Get My Grades",
+                "description": "Retrieve the current user context's own grade values in a course offering.",
+                "operationId": "GetMyGradeValues",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The current user's grade values",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GradeValue"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read grades in this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/grades/{gradeObjectId}/values/{userId}": {
+            "put": {
+                "summary": "Set Grade Value",
+                "description": "Set a numeric grade value for a user against a grade item. Use Get Grade Objects first to find the grade object ID and its maximum points.",
+                "operationId": "SetGradeValue",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "gradeObjectId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Identifier of the grade item to score.",
+                        "x-ms-summary": "Grade Object ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Brightspace user ID to grade.",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/IncomingNumericGradeValue"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The grade value was set"
+                    },
+                    "403": {
+                        "description": "Not authorized to set grades in this course"
+                    },
+                    "404": {
+                        "description": "No such grade object or user"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/content/toc": {
+            "get": {
+                "summary": "Get Course Content",
+                "description": "Retrieve the table of contents for a course offering, containing its modules and topics.",
+                "operationId": "GetContentToc",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course table of contents",
+                        "schema": {
+                            "$ref": "#/definitions/Toc"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read content in this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/dropbox/folders/": {
+            "get": {
+                "summary": "Get Assignment Folders",
+                "description": "Retrieve the assignment (dropbox) folders in a course offering.",
+                "operationId": "GetDropboxFolders",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "onlyCurrentStudentsAndGroups",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "Show only currently enrolled students and active groups.",
+                        "x-ms-summary": "Only Current Students And Groups",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignment folders",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/DropboxFolder"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read assignments in this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/dropbox/folders/{folderId}/submissions/": {
+            "get": {
+                "summary": "Get Assignment Submissions",
+                "description": "Retrieve the submissions made to an assignment folder.",
+                "operationId": "GetDropboxSubmissions",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "folderId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Identifier of the assignment folder.",
+                        "x-ms-summary": "Folder ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "activeOnly",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "Return only submissions from currently enrolled users.",
+                        "x-ms-summary": "Active Only",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignment submissions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/DropboxSubmission"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read submissions in this course"
+                    },
+                    "404": {
+                        "description": "No such assignment folder"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/news/": {
+            "get": {
+                "summary": "Get Announcements",
+                "description": "Retrieve the announcements (news items) posted in a course offering.",
+                "operationId": "GetNewsItems",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Announcements",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/NewsItem"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read announcements in this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Announcement",
+                "description": "Post a new announcement (news item) to a course offering.",
+                "operationId": "CreateNewsItem",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NewsItemData"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created announcement",
+                        "schema": {
+                            "$ref": "#/definitions/NewsItem"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to create announcements in this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/discussions/forums/": {
+            "get": {
+                "summary": "Get Discussion Forums",
+                "description": "Retrieve the discussion forums in a course offering.",
+                "operationId": "GetDiscussionForums",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Discussion forums",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/DiscussionForum"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read discussions in this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/discussions/forums/{forumId}/topics/": {
+            "get": {
+                "summary": "Get Discussion Topics",
+                "description": "Retrieve the discussion topics inside a forum.",
+                "operationId": "GetDiscussionTopics",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    },
+                    {
+                        "name": "forumId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Identifier of the discussion forum.",
+                        "x-ms-summary": "Forum ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Discussion topics",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/DiscussionTopic"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read discussions in this course"
+                    },
+                    "404": {
+                        "description": "No such discussion forum"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/d2l/api/le/{version}/{orgUnitId}/quizzes/": {
+            "get": {
+                "summary": "Get Quizzes",
+                "description": "Retrieve a page of the quizzes in a course offering. Follow the Next URL in the response to read further pages.",
+                "operationId": "GetQuizzes",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/LeVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/OrgUnitIdPath"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Page of quizzes",
+                        "schema": {
+                            "$ref": "#/definitions/QuizObjectListPage"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized to read quizzes in this course"
+                    },
+                    "429": {
+                        "description": "API call-rate limit exceeded"
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {
+        "LpVersion": {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "default": "1.49",
+            "description": "Learning Platform (lp) API contract version. 1.49 is the oldest non-deprecated version; raise it only if you need a route added in a later contract. Use Get API Versions to see what this tenant supports.",
+            "x-ms-summary": "LP API Version",
+            "x-ms-visibility": "advanced",
+            "x-ms-url-encoding": "single"
+        },
+        "LeVersion": {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "default": "1.82",
+            "description": "Learning Environment (le) API contract version. 1.82 is the oldest non-deprecated version; raise it only if you need a route added in a later contract. Use Get API Versions to see what this tenant supports.",
+            "x-ms-summary": "LE API Version",
+            "x-ms-visibility": "advanced",
+            "x-ms-url-encoding": "single"
+        },
+        "OrgUnitIdPath": {
+            "name": "orgUnitId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Org unit ID, for example the identifier of a course offering.",
+            "x-ms-summary": "Org Unit ID",
+            "x-ms-url-encoding": "single"
+        }
+    },
+    "definitions": {
+        "ApiVersion": {
+            "type": "object",
+            "description": "Latest supported API contract version for one product component.",
+            "properties": {
+                "ProductCode": {
+                    "type": "string",
+                    "description": "Product component code: lp, le, ep, or lr.",
+                    "x-ms-summary": "Product Code"
+                },
+                "Version": {
+                    "type": "string",
+                    "description": "Latest supported contract version for the component.",
+                    "x-ms-summary": "Version"
+                }
+            }
+        },
+        "PagingInfo": {
+            "type": "object",
+            "description": "Paging control block returned with a paged result set.",
+            "properties": {
+                "Bookmark": {
+                    "type": "string",
+                    "description": "Pass this value as the bookmark parameter to fetch the next page.",
+                    "x-ms-summary": "Bookmark"
+                },
+                "HasMoreItems": {
+                    "type": "boolean",
+                    "description": "True when further pages remain.",
+                    "x-ms-summary": "Has More Items"
+                }
+            }
+        },
+        "RichText": {
+            "type": "object",
+            "description": "Rich text returned by the service in both plain and HTML form.",
+            "properties": {
+                "Text": {
+                    "type": "string",
+                    "description": "Plain text form of the content.",
+                    "x-ms-summary": "Text"
+                },
+                "Html": {
+                    "type": "string",
+                    "description": "HTML form of the content.",
+                    "x-ms-summary": "HTML"
+                }
+            }
+        },
+        "RichTextInput": {
+            "type": "object",
+            "required": [
+                "Type"
+            ],
+            "description": "Rich text supplied to the service.",
+            "properties": {
+                "Content": {
+                    "type": "string",
+                    "description": "The text or HTML content.",
+                    "x-ms-summary": "Content"
+                },
+                "Type": {
+                    "type": "string",
+                    "description": "Whether Content is plain text or HTML.",
+                    "enum": [
+                        "Text",
+                        "Html"
+                    ],
+                    "default": "Html",
+                    "x-ms-summary": "Content Type"
+                }
+            }
+        },
+        "WhoAmIUser": {
+            "type": "object",
+            "description": "Identity of the current user context.",
+            "properties": {
+                "Identifier": {
+                    "type": "string",
+                    "description": "Brightspace user ID of the current user.",
+                    "x-ms-summary": "User ID"
+                },
+                "FirstName": {
+                    "type": "string",
+                    "description": "Given name.",
+                    "x-ms-summary": "First Name"
+                },
+                "LastName": {
+                    "type": "string",
+                    "description": "Family name.",
+                    "x-ms-summary": "Last Name"
+                },
+                "UniqueName": {
+                    "type": "string",
+                    "description": "Unique identifier for the user, matching UniqueIdentifier on the full user record.",
+                    "x-ms-summary": "Unique Name"
+                },
+                "ProfileIdentifier": {
+                    "type": "string",
+                    "description": "Identifier of the user's profile.",
+                    "x-ms-summary": "Profile Identifier"
+                },
+                "Pronouns": {
+                    "type": "string",
+                    "description": "Pronouns chosen by the user.",
+                    "x-ms-summary": "Pronouns"
+                }
+            }
+        },
+        "UserActivationData": {
+            "type": "object",
+            "description": "Whether a user account is active.",
+            "properties": {
+                "IsActive": {
+                    "type": "boolean",
+                    "description": "True when the account is active.",
+                    "x-ms-summary": "Is Active"
+                }
+            }
+        },
+        "UserData": {
+            "type": "object",
+            "description": "Full user record from the user management service.",
+            "properties": {
+                "OrgId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the organization the user belongs to.",
+                    "x-ms-summary": "Org ID"
+                },
+                "UserId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Brightspace user ID.",
+                    "x-ms-summary": "User ID"
+                },
+                "FirstName": {
+                    "type": "string",
+                    "description": "Given name.",
+                    "x-ms-summary": "First Name"
+                },
+                "MiddleName": {
+                    "type": "string",
+                    "description": "Middle name.",
+                    "x-ms-summary": "Middle Name"
+                },
+                "LastName": {
+                    "type": "string",
+                    "description": "Family name.",
+                    "x-ms-summary": "Last Name"
+                },
+                "UserName": {
+                    "type": "string",
+                    "description": "Brightspace username.",
+                    "x-ms-summary": "Username"
+                },
+                "ExternalEmail": {
+                    "type": "string",
+                    "description": "External email address.",
+                    "x-ms-summary": "External Email"
+                },
+                "OrgDefinedId": {
+                    "type": "string",
+                    "description": "Organization-defined identifier, such as a student number.",
+                    "x-ms-summary": "Org Defined ID"
+                },
+                "UniqueIdentifier": {
+                    "type": "string",
+                    "description": "Unique identifier for the user.",
+                    "x-ms-summary": "Unique Identifier"
+                },
+                "Activation": {
+                    "$ref": "#/definitions/UserActivationData"
+                },
+                "DisplayName": {
+                    "type": "string",
+                    "description": "Name shown in the Brightspace interface.",
+                    "x-ms-summary": "Display Name"
+                },
+                "LastAccessedDate": {
+                    "type": "string",
+                    "description": "When the user last accessed Brightspace, in UTC.",
+                    "x-ms-summary": "Last Accessed Date"
+                },
+                "Pronouns": {
+                    "type": "string",
+                    "description": "Pronouns chosen by the user.",
+                    "x-ms-summary": "Pronouns"
+                }
+            }
+        },
+        "UserDataPagedResultSet": {
+            "type": "object",
+            "description": "A page of user records.",
+            "properties": {
+                "PagingInfo": {
+                    "$ref": "#/definitions/PagingInfo"
+                },
+                "Items": {
+                    "type": "array",
+                    "description": "Users in this page.",
+                    "items": {
+                        "$ref": "#/definitions/UserData"
+                    }
+                }
+            }
+        },
+        "CreateUserData": {
+            "type": "object",
+            "required": [
+                "FirstName",
+                "LastName",
+                "UserName",
+                "RoleId",
+                "IsActive",
+                "SendCreationEmail"
+            ],
+            "description": "New user details.",
+            "properties": {
+                "OrgDefinedId": {
+                    "type": "string",
+                    "description": "Organization-defined identifier, such as a student number.",
+                    "x-ms-summary": "Org Defined ID"
+                },
+                "FirstName": {
+                    "type": "string",
+                    "description": "Given name.",
+                    "x-ms-summary": "First Name"
+                },
+                "MiddleName": {
+                    "type": "string",
+                    "description": "Middle name.",
+                    "x-ms-summary": "Middle Name",
+                    "x-ms-visibility": "advanced"
+                },
+                "LastName": {
+                    "type": "string",
+                    "description": "Family name.",
+                    "x-ms-summary": "Last Name"
+                },
+                "ExternalEmail": {
+                    "type": "string",
+                    "description": "External email address. Must be a well-formed address or omitted entirely.",
+                    "x-ms-summary": "External Email"
+                },
+                "UserName": {
+                    "type": "string",
+                    "description": "Brightspace username for the new account.",
+                    "x-ms-summary": "Username"
+                },
+                "RoleId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Organization-level role to assign to the new user.",
+                    "x-ms-summary": "Role ID"
+                },
+                "IsActive": {
+                    "type": "boolean",
+                    "description": "Whether the new account is active.",
+                    "x-ms-summary": "Is Active"
+                },
+                "SendCreationEmail": {
+                    "type": "boolean",
+                    "description": "Whether Brightspace emails the user about the new account.",
+                    "x-ms-summary": "Send Creation Email"
+                },
+                "Pronouns": {
+                    "type": "string",
+                    "description": "Pronouns for the user.",
+                    "x-ms-summary": "Pronouns",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "Organization": {
+            "type": "object",
+            "description": "Information about the organization.",
+            "properties": {
+                "Identifier": {
+                    "type": "string",
+                    "description": "Org unit ID of the organization.",
+                    "x-ms-summary": "Identifier"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the organization.",
+                    "x-ms-summary": "Name"
+                },
+                "TimeZone": {
+                    "type": "string",
+                    "description": "IANA time zone of the organization.",
+                    "x-ms-summary": "Time Zone"
+                }
+            }
+        },
+        "OrgUnitType": {
+            "type": "object",
+            "description": "Type of an org unit, such as course offering or department.",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Org unit type ID.",
+                    "x-ms-summary": "Type ID"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "Short code for the type.",
+                    "x-ms-summary": "Type Code"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Display name for the type.",
+                    "x-ms-summary": "Type Name"
+                }
+            }
+        },
+        "OrgUnit": {
+            "type": "object",
+            "description": "A node in the organization structure.",
+            "properties": {
+                "Identifier": {
+                    "type": "string",
+                    "description": "Org unit ID.",
+                    "x-ms-summary": "Identifier"
+                },
+                "Type": {
+                    "$ref": "#/definitions/OrgUnitType"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the org unit.",
+                    "x-ms-summary": "Name"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "Code of the org unit.",
+                    "x-ms-summary": "Code"
+                }
+            }
+        },
+        "OrgUnitPagedResultSet": {
+            "type": "object",
+            "description": "A page of org units.",
+            "properties": {
+                "PagingInfo": {
+                    "$ref": "#/definitions/PagingInfo"
+                },
+                "Items": {
+                    "type": "array",
+                    "description": "Org units in this page.",
+                    "items": {
+                        "$ref": "#/definitions/OrgUnit"
+                    }
+                }
+            }
+        },
+        "BasicOrgUnit": {
+            "type": "object",
+            "description": "Minimal reference to a related org unit.",
+            "properties": {
+                "Identifier": {
+                    "type": "string",
+                    "description": "Org unit ID.",
+                    "x-ms-summary": "Identifier"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the org unit.",
+                    "x-ms-summary": "Name"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "Code of the org unit.",
+                    "x-ms-summary": "Code"
+                }
+            }
+        },
+        "CourseOffering": {
+            "type": "object",
+            "description": "A course offering.",
+            "properties": {
+                "Identifier": {
+                    "type": "string",
+                    "description": "Org unit ID of the course offering.",
+                    "x-ms-summary": "Identifier"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the course offering.",
+                    "x-ms-summary": "Name"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "Code of the course offering.",
+                    "x-ms-summary": "Code"
+                },
+                "IsActive": {
+                    "type": "boolean",
+                    "description": "Whether the course offering is active.",
+                    "x-ms-summary": "Is Active"
+                },
+                "Path": {
+                    "type": "string",
+                    "description": "Content path for the course offering.",
+                    "x-ms-summary": "Path"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "Start date in UTC.",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "End date in UTC.",
+                    "x-ms-summary": "End Date"
+                },
+                "CourseTemplate": {
+                    "$ref": "#/definitions/BasicOrgUnit"
+                },
+                "Semester": {
+                    "$ref": "#/definitions/BasicOrgUnit"
+                },
+                "Department": {
+                    "$ref": "#/definitions/BasicOrgUnit"
+                },
+                "Description": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "CanSelfRegister": {
+                    "type": "boolean",
+                    "description": "Whether users can self-register in the course offering.",
+                    "x-ms-summary": "Can Self Register"
+                }
+            }
+        },
+        "CreateCourseOffering": {
+            "type": "object",
+            "required": [
+                "Name",
+                "Code",
+                "CourseTemplateId",
+                "ForceLocale",
+                "ShowAddressBook"
+            ],
+            "description": "Details for a new course offering.",
+            "properties": {
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the new course offering.",
+                    "x-ms-summary": "Name"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "Unique code for the new course offering.",
+                    "x-ms-summary": "Code"
+                },
+                "Path": {
+                    "type": "string",
+                    "description": "Content path. Leave empty to let Brightspace generate one.",
+                    "x-ms-summary": "Path",
+                    "x-ms-visibility": "advanced"
+                },
+                "CourseTemplateId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Org unit ID of the course template this offering is based on.",
+                    "x-ms-summary": "Course Template ID"
+                },
+                "SemesterId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Org unit ID of the semester to attach the offering to.",
+                    "x-ms-summary": "Semester ID"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "Start date in UTC (yyyy-MM-ddTHH:mm:ss.fffZ).",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "End date in UTC (yyyy-MM-ddTHH:mm:ss.fffZ).",
+                    "x-ms-summary": "End Date"
+                },
+                "LocaleId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Locale to apply to the course offering.",
+                    "x-ms-summary": "Locale ID",
+                    "x-ms-visibility": "advanced"
+                },
+                "ForceLocale": {
+                    "type": "boolean",
+                    "description": "Whether to force the locale on all participants.",
+                    "x-ms-summary": "Force Locale"
+                },
+                "ShowAddressBook": {
+                    "type": "boolean",
+                    "description": "Whether the address book is shown in the course offering.",
+                    "x-ms-summary": "Show Address Book"
+                },
+                "Description": {
+                    "$ref": "#/definitions/RichTextInput"
+                },
+                "CanSelfRegister": {
+                    "type": "boolean",
+                    "description": "Whether users can self-register in the course offering.",
+                    "x-ms-summary": "Can Self Register",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "UpdateCourseOffering": {
+            "type": "object",
+            "description": "Properties to update on a course offering. Omitted properties are left unchanged.",
+            "properties": {
+                "Name": {
+                    "type": "string",
+                    "description": "New name for the course offering.",
+                    "x-ms-summary": "Name"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "New code for the course offering.",
+                    "x-ms-summary": "Code"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "New start date in UTC (yyyy-MM-ddTHH:mm:ss.fffZ).",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "New end date in UTC (yyyy-MM-ddTHH:mm:ss.fffZ).",
+                    "x-ms-summary": "End Date"
+                },
+                "IsActive": {
+                    "type": "boolean",
+                    "description": "Whether the course offering is active.",
+                    "x-ms-summary": "Is Active"
+                },
+                "Description": {
+                    "$ref": "#/definitions/RichTextInput"
+                },
+                "CanSelfRegister": {
+                    "type": "boolean",
+                    "description": "Whether users can self-register in the course offering.",
+                    "x-ms-summary": "Can Self Register",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "OrgUnitInfo": {
+            "type": "object",
+            "description": "Summary of an org unit the current user is enrolled in.",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Org unit ID.",
+                    "x-ms-summary": "Org Unit ID"
+                },
+                "Type": {
+                    "$ref": "#/definitions/OrgUnitType"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the org unit.",
+                    "x-ms-summary": "Name"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "Code of the org unit.",
+                    "x-ms-summary": "Code"
+                },
+                "HomeUrl": {
+                    "type": "string",
+                    "description": "Link to the org unit home page.",
+                    "x-ms-summary": "Home URL"
+                }
+            }
+        },
+        "EnrollmentAccess": {
+            "type": "object",
+            "description": "The current user's access to an enrolled org unit.",
+            "properties": {
+                "IsActive": {
+                    "type": "boolean",
+                    "description": "Whether the org unit is active.",
+                    "x-ms-summary": "Is Active"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "Access start date in UTC.",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "Access end date in UTC.",
+                    "x-ms-summary": "End Date"
+                },
+                "CanAccess": {
+                    "type": "boolean",
+                    "description": "Whether the user can currently access the org unit.",
+                    "x-ms-summary": "Can Access"
+                },
+                "ClasslistRoleName": {
+                    "type": "string",
+                    "description": "Role the user holds in the org unit.",
+                    "x-ms-summary": "Classlist Role Name"
+                }
+            }
+        },
+        "MyOrgUnitInfo": {
+            "type": "object",
+            "description": "One of the current user's enrollments.",
+            "properties": {
+                "OrgUnit": {
+                    "$ref": "#/definitions/OrgUnitInfo"
+                },
+                "Access": {
+                    "$ref": "#/definitions/EnrollmentAccess"
+                }
+            }
+        },
+        "MyOrgUnitInfoPagedResultSet": {
+            "type": "object",
+            "description": "A page of the current user's enrollments.",
+            "properties": {
+                "PagingInfo": {
+                    "$ref": "#/definitions/PagingInfo"
+                },
+                "Items": {
+                    "type": "array",
+                    "description": "Enrollments in this page.",
+                    "items": {
+                        "$ref": "#/definitions/MyOrgUnitInfo"
+                    }
+                }
+            }
+        },
+        "OrgUnitUser": {
+            "type": "object",
+            "description": "A user enrolled in an org unit, with their role.",
+            "properties": {
+                "User": {
+                    "$ref": "#/definitions/UserSummary"
+                },
+                "Role": {
+                    "$ref": "#/definitions/RoleInfo"
+                }
+            }
+        },
+        "OrgUnitUserPagedResultSet": {
+            "type": "object",
+            "description": "A page of users enrolled in an org unit.",
+            "properties": {
+                "PagingInfo": {
+                    "$ref": "#/definitions/PagingInfo"
+                },
+                "Items": {
+                    "type": "array",
+                    "description": "Enrolled users in this page.",
+                    "items": {
+                        "$ref": "#/definitions/OrgUnitUser"
+                    }
+                }
+            }
+        },
+        "UserSummary": {
+            "type": "object",
+            "description": "Summary of a user, embedded in other resources.",
+            "properties": {
+                "Identifier": {
+                    "type": "string",
+                    "description": "Brightspace user ID.",
+                    "x-ms-summary": "User ID"
+                },
+                "DisplayName": {
+                    "type": "string",
+                    "description": "Name shown in the Brightspace interface.",
+                    "x-ms-summary": "Display Name"
+                },
+                "EmailAddress": {
+                    "type": "string",
+                    "description": "Email address.",
+                    "x-ms-summary": "Email Address"
+                },
+                "OrgDefinedId": {
+                    "type": "string",
+                    "description": "Organization-defined identifier, such as a student number.",
+                    "x-ms-summary": "Org Defined ID"
+                },
+                "ProfileBadgeUrl": {
+                    "type": "string",
+                    "description": "Link to the user's profile badge image.",
+                    "x-ms-summary": "Profile Badge URL"
+                },
+                "ProfileIdentifier": {
+                    "type": "string",
+                    "description": "Identifier of the user's profile.",
+                    "x-ms-summary": "Profile Identifier"
+                },
+                "UserName": {
+                    "type": "string",
+                    "description": "Brightspace username.",
+                    "x-ms-summary": "Username"
+                }
+            }
+        },
+        "RoleInfo": {
+            "type": "object",
+            "description": "A Brightspace role.",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Role ID.",
+                    "x-ms-summary": "Role ID"
+                },
+                "Code": {
+                    "type": "string",
+                    "description": "Role code.",
+                    "x-ms-summary": "Role Code"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Role name, such as Student or Instructor.",
+                    "x-ms-summary": "Role Name"
+                }
+            }
+        },
+        "CreateEnrollmentData": {
+            "type": "object",
+            "required": [
+                "OrgUnitId",
+                "UserId",
+                "RoleId"
+            ],
+            "description": "Details of the enrollment to create.",
+            "properties": {
+                "OrgUnitId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Org unit to enroll the user in, for example a course offering.",
+                    "x-ms-summary": "Org Unit ID"
+                },
+                "UserId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Brightspace user ID to enroll.",
+                    "x-ms-summary": "User ID"
+                },
+                "RoleId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Role to grant the user in the org unit, for example the student role.",
+                    "x-ms-summary": "Role ID"
+                },
+                "SendEnrollmentEmail": {
+                    "type": "boolean",
+                    "description": "Whether Brightspace emails the user about the enrollment. Defaults to false.",
+                    "x-ms-summary": "Send Enrollment Email",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "EnrollmentData": {
+            "type": "object",
+            "description": "An enrollment record.",
+            "properties": {
+                "OrgUnitId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Org unit the user is enrolled in.",
+                    "x-ms-summary": "Org Unit ID"
+                },
+                "UserId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Brightspace user ID.",
+                    "x-ms-summary": "User ID"
+                },
+                "RoleId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Role held in the org unit.",
+                    "x-ms-summary": "Role ID"
+                },
+                "IsCascading": {
+                    "type": "boolean",
+                    "description": "Whether the enrollment cascades to descendant org units.",
+                    "x-ms-summary": "Is Cascading"
+                }
+            }
+        },
+        "ClasslistUser": {
+            "type": "object",
+            "description": "A member of a course classlist.",
+            "properties": {
+                "Identifier": {
+                    "type": "string",
+                    "description": "Brightspace user ID.",
+                    "x-ms-summary": "User ID"
+                },
+                "ProfileIdentifier": {
+                    "type": "string",
+                    "description": "Identifier of the user's profile.",
+                    "x-ms-summary": "Profile Identifier"
+                },
+                "DisplayName": {
+                    "type": "string",
+                    "description": "Name shown in the Brightspace interface.",
+                    "x-ms-summary": "Display Name"
+                },
+                "Username": {
+                    "type": "string",
+                    "description": "Brightspace username.",
+                    "x-ms-summary": "Username"
+                },
+                "OrgDefinedId": {
+                    "type": "string",
+                    "description": "Organization-defined identifier, such as a student number.",
+                    "x-ms-summary": "Org Defined ID"
+                },
+                "Email": {
+                    "type": "string",
+                    "description": "Email address.",
+                    "x-ms-summary": "Email"
+                },
+                "RoleId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Role the user holds in the course.",
+                    "x-ms-summary": "Role ID"
+                },
+                "LastAccessed": {
+                    "type": "string",
+                    "description": "When the user last accessed the course, in UTC.",
+                    "x-ms-summary": "Last Accessed"
+                },
+                "IsOnline": {
+                    "type": "boolean",
+                    "description": "Whether the user is currently online.",
+                    "x-ms-summary": "Is Online"
+                }
+            }
+        },
+        "GradeObject": {
+            "type": "object",
+            "description": "A grade item in a course grade book.",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Grade object ID.",
+                    "x-ms-summary": "Grade Object ID"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the grade item.",
+                    "x-ms-summary": "Name"
+                },
+                "ShortName": {
+                    "type": "string",
+                    "description": "Short name of the grade item.",
+                    "x-ms-summary": "Short Name"
+                },
+                "GradeType": {
+                    "type": "string",
+                    "description": "Grade type: Numeric, PassFail, SelectBox, or Text.",
+                    "x-ms-summary": "Grade Type"
+                },
+                "CategoryId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Grade category the item belongs to.",
+                    "x-ms-summary": "Category ID"
+                },
+                "Description": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "MaxPoints": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "Maximum points available for this grade item.",
+                    "x-ms-summary": "Max Points"
+                },
+                "IsBonus": {
+                    "type": "boolean",
+                    "description": "Whether the item is a bonus grade.",
+                    "x-ms-summary": "Is Bonus"
+                },
+                "ExcludeFromFinalGradeCalculation": {
+                    "type": "boolean",
+                    "description": "Whether the item is excluded from the final grade.",
+                    "x-ms-summary": "Exclude From Final Grade"
+                },
+                "GradeSchemeId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Grade scheme applied to the item.",
+                    "x-ms-summary": "Grade Scheme ID"
+                },
+                "Weight": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "Weight of the item in its category.",
+                    "x-ms-summary": "Weight"
+                }
+            }
+        },
+        "GradeValue": {
+            "type": "object",
+            "description": "A grade a user has received for a grade item.",
+            "properties": {
+                "DisplayedGrade": {
+                    "type": "string",
+                    "description": "Grade as shown to the user.",
+                    "x-ms-summary": "Displayed Grade"
+                },
+                "GradeObjectIdentifier": {
+                    "type": "string",
+                    "description": "Identifier of the grade item.",
+                    "x-ms-summary": "Grade Object ID"
+                },
+                "GradeObjectName": {
+                    "type": "string",
+                    "description": "Name of the grade item.",
+                    "x-ms-summary": "Grade Object Name"
+                },
+                "GradeObjectType": {
+                    "type": "integer",
+                    "description": "Grade object type: 1 Numeric, 2 PassFail, 3 SelectBox, 4 Text.",
+                    "x-ms-summary": "Grade Object Type"
+                },
+                "GradeObjectTypeName": {
+                    "type": "string",
+                    "description": "Name of the grade object type.",
+                    "x-ms-summary": "Grade Object Type Name"
+                },
+                "PointsNumerator": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "Points awarded.",
+                    "x-ms-summary": "Points Numerator"
+                },
+                "PointsDenominator": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "Points available.",
+                    "x-ms-summary": "Points Denominator"
+                },
+                "WeightedNumerator": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "Weighted points awarded.",
+                    "x-ms-summary": "Weighted Numerator"
+                },
+                "WeightedDenominator": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "Weighted points available.",
+                    "x-ms-summary": "Weighted Denominator"
+                },
+                "Comments": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "PrivateComments": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "LastModified": {
+                    "type": "string",
+                    "description": "When the grade was last modified, in UTC.",
+                    "x-ms-summary": "Last Modified"
+                },
+                "LastModifiedBy": {
+                    "type": "string",
+                    "description": "User ID of whoever last modified the grade.",
+                    "x-ms-summary": "Last Modified By"
+                },
+                "ReleasedDate": {
+                    "type": "string",
+                    "description": "When the grade was released to the user, in UTC.",
+                    "x-ms-summary": "Released Date"
+                }
+            }
+        },
+        "IncomingNumericGradeValue": {
+            "type": "object",
+            "required": [
+                "GradeObjectType"
+            ],
+            "description": "A numeric grade to record against a grade item.",
+            "properties": {
+                "GradeObjectType": {
+                    "type": "integer",
+                    "default": 1,
+                    "x-ms-visibility": "internal",
+                    "title": ""
+                },
+                "PointsNumerator": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "Points to award, out of the grade item's maximum points.",
+                    "x-ms-summary": "Points"
+                },
+                "Comments": {
+                    "$ref": "#/definitions/RichTextInput"
+                },
+                "PrivateComments": {
+                    "$ref": "#/definitions/RichTextInput"
+                }
+            }
+        },
+        "TocTopic": {
+            "type": "object",
+            "description": "A content topic inside a module.",
+            "properties": {
+                "TopicId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the topic.",
+                    "x-ms-summary": "Topic ID"
+                },
+                "Identifier": {
+                    "type": "string",
+                    "description": "String identifier of the topic.",
+                    "x-ms-summary": "Identifier"
+                },
+                "Title": {
+                    "type": "string",
+                    "description": "Title of the topic.",
+                    "x-ms-summary": "Title"
+                },
+                "TypeIdentifier": {
+                    "type": "string",
+                    "description": "Kind of topic, such as File, Link, or Quiz.",
+                    "x-ms-summary": "Type"
+                },
+                "Url": {
+                    "type": "string",
+                    "description": "Link to the topic.",
+                    "x-ms-summary": "URL"
+                },
+                "IsBroken": {
+                    "type": "boolean",
+                    "description": "Whether the topic link is broken.",
+                    "x-ms-summary": "Is Broken"
+                },
+                "Bookmarked": {
+                    "type": "boolean",
+                    "description": "Whether the current user has bookmarked the topic.",
+                    "x-ms-summary": "Bookmarked"
+                },
+                "Unread": {
+                    "type": "boolean",
+                    "description": "Whether the topic is unread by the current user.",
+                    "x-ms-summary": "Unread"
+                }
+            }
+        },
+        "TocModule": {
+            "type": "object",
+            "description": "A content module in the course table of contents.",
+            "properties": {
+                "ModuleId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the module.",
+                    "x-ms-summary": "Module ID"
+                },
+                "Title": {
+                    "type": "string",
+                    "description": "Title of the module.",
+                    "x-ms-summary": "Title"
+                },
+                "IsHidden": {
+                    "type": "boolean",
+                    "description": "Whether the module is hidden from learners.",
+                    "x-ms-summary": "Is Hidden"
+                },
+                "IsLocked": {
+                    "type": "boolean",
+                    "description": "Whether the module is locked.",
+                    "x-ms-summary": "Is Locked"
+                },
+                "Topics": {
+                    "type": "array",
+                    "description": "Topics directly inside this module.",
+                    "items": {
+                        "$ref": "#/definitions/TocTopic"
+                    }
+                },
+                "Modules": {
+                    "type": "array",
+                    "description": "Nested submodules. Only the first level of nesting is expanded here; read the module directly for deeper levels.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "ModuleId": {
+                                "type": "integer",
+                                "format": "int64",
+                                "description": "Identifier of the submodule.",
+                                "x-ms-summary": "Module ID"
+                            },
+                            "Title": {
+                                "type": "string",
+                                "description": "Title of the submodule.",
+                                "x-ms-summary": "Title"
+                            },
+                            "IsHidden": {
+                                "type": "boolean",
+                                "description": "Whether the submodule is hidden from learners.",
+                                "x-ms-summary": "Is Hidden"
+                            },
+                            "Topics": {
+                                "type": "array",
+                                "description": "Topics inside the submodule.",
+                                "items": {
+                                    "$ref": "#/definitions/TocTopic"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "Toc": {
+            "type": "object",
+            "description": "Table of contents for a course offering.",
+            "properties": {
+                "Modules": {
+                    "type": "array",
+                    "description": "Top-level content modules.",
+                    "items": {
+                        "$ref": "#/definitions/TocModule"
+                    }
+                }
+            }
+        },
+        "DropboxFolder": {
+            "type": "object",
+            "description": "An assignment (dropbox) folder.",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the assignment folder.",
+                    "x-ms-summary": "Folder ID"
+                },
+                "CategoryId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Category the folder belongs to.",
+                    "x-ms-summary": "Category ID"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the assignment.",
+                    "x-ms-summary": "Name"
+                },
+                "CustomInstructions": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "TotalFiles": {
+                    "type": "integer",
+                    "description": "Total number of submitted files.",
+                    "x-ms-summary": "Total Files"
+                },
+                "UnreadFiles": {
+                    "type": "integer",
+                    "description": "Number of unread submitted files.",
+                    "x-ms-summary": "Unread Files"
+                },
+                "TotalUsers": {
+                    "type": "integer",
+                    "description": "Number of users expected to submit.",
+                    "x-ms-summary": "Total Users"
+                },
+                "TotalUsersWithSubmissions": {
+                    "type": "integer",
+                    "description": "Number of users who have submitted.",
+                    "x-ms-summary": "Total Users With Submissions"
+                },
+                "TotalUsersWithFeedback": {
+                    "type": "integer",
+                    "description": "Number of users who have received feedback.",
+                    "x-ms-summary": "Total Users With Feedback"
+                },
+                "DueDate": {
+                    "type": "string",
+                    "description": "Due date in UTC.",
+                    "x-ms-summary": "Due Date"
+                },
+                "GradeItemId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Grade item the assignment is linked to.",
+                    "x-ms-summary": "Grade Item ID"
+                },
+                "IsHidden": {
+                    "type": "boolean",
+                    "description": "Whether the assignment is hidden from learners.",
+                    "x-ms-summary": "Is Hidden"
+                }
+            }
+        },
+        "DropboxSubmissionFile": {
+            "type": "object",
+            "description": "A file attached to an assignment submission.",
+            "properties": {
+                "FileId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the file.",
+                    "x-ms-summary": "File ID"
+                },
+                "FileName": {
+                    "type": "string",
+                    "description": "Name of the file.",
+                    "x-ms-summary": "File Name"
+                },
+                "Size": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Size of the file in bytes.",
+                    "x-ms-summary": "Size"
+                },
+                "IsRead": {
+                    "type": "boolean",
+                    "description": "Whether the file has been read.",
+                    "x-ms-summary": "Is Read"
+                },
+                "IsFlagged": {
+                    "type": "boolean",
+                    "description": "Whether the file has been flagged.",
+                    "x-ms-summary": "Is Flagged"
+                }
+            }
+        },
+        "DropboxSubmission": {
+            "type": "object",
+            "description": "A submission made to an assignment folder.",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the submission.",
+                    "x-ms-summary": "Submission ID"
+                },
+                "SubmissionDate": {
+                    "type": "string",
+                    "description": "When the submission was made, in UTC.",
+                    "x-ms-summary": "Submission Date"
+                },
+                "Comment": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "Submitter": {
+                    "$ref": "#/definitions/UserSummary"
+                },
+                "Files": {
+                    "type": "array",
+                    "description": "Files attached to the submission.",
+                    "items": {
+                        "$ref": "#/definitions/DropboxSubmissionFile"
+                    }
+                }
+            }
+        },
+        "NewsItem": {
+            "type": "object",
+            "description": "An announcement posted in a course offering.",
+            "properties": {
+                "Id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the announcement.",
+                    "x-ms-summary": "Announcement ID"
+                },
+                "Title": {
+                    "type": "string",
+                    "description": "Title of the announcement.",
+                    "x-ms-summary": "Title"
+                },
+                "Body": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "When the announcement becomes visible, in UTC.",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "When the announcement stops being visible, in UTC.",
+                    "x-ms-summary": "End Date"
+                },
+                "IsGlobal": {
+                    "type": "boolean",
+                    "description": "Whether the announcement is shown across the organization.",
+                    "x-ms-summary": "Is Global"
+                },
+                "IsPublished": {
+                    "type": "boolean",
+                    "description": "Whether the announcement is published.",
+                    "x-ms-summary": "Is Published"
+                },
+                "IsPinned": {
+                    "type": "boolean",
+                    "description": "Whether the announcement is pinned to the top.",
+                    "x-ms-summary": "Is Pinned"
+                },
+                "IsAuthorInfoShown": {
+                    "type": "boolean",
+                    "description": "Whether the author is shown with the announcement.",
+                    "x-ms-summary": "Is Author Info Shown"
+                }
+            }
+        },
+        "NewsItemData": {
+            "type": "object",
+            "required": [
+                "Title",
+                "StartDate",
+                "IsGlobal",
+                "IsPublished",
+                "ShowOnlyInCourseOfferings",
+                "IsAuthorInfoShown"
+            ],
+            "description": "Details for a new announcement.",
+            "properties": {
+                "Title": {
+                    "type": "string",
+                    "description": "Title of the announcement.",
+                    "x-ms-summary": "Title"
+                },
+                "Body": {
+                    "$ref": "#/definitions/RichTextInput"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "When the announcement becomes visible, in UTC (yyyy-MM-ddTHH:mm:ss.fffZ).",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "When the announcement stops being visible, in UTC (yyyy-MM-ddTHH:mm:ss.fffZ). Leave empty for no end date.",
+                    "x-ms-summary": "End Date"
+                },
+                "IsGlobal": {
+                    "type": "boolean",
+                    "description": "Whether the announcement is shown across the organization.",
+                    "x-ms-summary": "Is Global"
+                },
+                "IsPublished": {
+                    "type": "boolean",
+                    "description": "Whether to publish the announcement immediately.",
+                    "x-ms-summary": "Is Published"
+                },
+                "ShowOnlyInCourseOfferings": {
+                    "type": "boolean",
+                    "description": "Whether to restrict the announcement to course offerings.",
+                    "x-ms-summary": "Show Only In Course Offerings"
+                },
+                "IsAuthorInfoShown": {
+                    "type": "boolean",
+                    "description": "Whether to show the author with the announcement.",
+                    "x-ms-summary": "Is Author Info Shown"
+                },
+                "IsPinned": {
+                    "type": "boolean",
+                    "description": "Whether to pin the announcement to the top.",
+                    "x-ms-summary": "Is Pinned",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "DiscussionForum": {
+            "type": "object",
+            "description": "A discussion forum in a course offering.",
+            "properties": {
+                "ForumId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the forum.",
+                    "x-ms-summary": "Forum ID"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the forum.",
+                    "x-ms-summary": "Name"
+                },
+                "Description": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "When the forum opens, in UTC.",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "When the forum closes, in UTC.",
+                    "x-ms-summary": "End Date"
+                },
+                "IsHidden": {
+                    "type": "boolean",
+                    "description": "Whether the forum is hidden from learners.",
+                    "x-ms-summary": "Is Hidden"
+                },
+                "IsLocked": {
+                    "type": "boolean",
+                    "description": "Whether the forum is locked.",
+                    "x-ms-summary": "Is Locked"
+                }
+            }
+        },
+        "DiscussionTopic": {
+            "type": "object",
+            "description": "A discussion topic inside a forum.",
+            "properties": {
+                "ForumId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the parent forum.",
+                    "x-ms-summary": "Forum ID"
+                },
+                "TopicId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the topic.",
+                    "x-ms-summary": "Topic ID"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the topic.",
+                    "x-ms-summary": "Name"
+                },
+                "Description": {
+                    "$ref": "#/definitions/RichText"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "When the topic opens, in UTC.",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "When the topic closes, in UTC.",
+                    "x-ms-summary": "End Date"
+                },
+                "IsHidden": {
+                    "type": "boolean",
+                    "description": "Whether the topic is hidden from learners.",
+                    "x-ms-summary": "Is Hidden"
+                },
+                "IsLocked": {
+                    "type": "boolean",
+                    "description": "Whether the topic is locked.",
+                    "x-ms-summary": "Is Locked"
+                },
+                "ScoringType": {
+                    "type": "string",
+                    "description": "How the topic is scored, when scoring is enabled.",
+                    "x-ms-summary": "Scoring Type"
+                }
+            }
+        },
+        "Quiz": {
+            "type": "object",
+            "description": "A quiz in a course offering.",
+            "properties": {
+                "QuizId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Identifier of the quiz.",
+                    "x-ms-summary": "Quiz ID"
+                },
+                "Name": {
+                    "type": "string",
+                    "description": "Name of the quiz.",
+                    "x-ms-summary": "Name"
+                },
+                "IsActive": {
+                    "type": "boolean",
+                    "description": "Whether the quiz is active.",
+                    "x-ms-summary": "Is Active"
+                },
+                "StartDate": {
+                    "type": "string",
+                    "description": "When the quiz opens, in UTC.",
+                    "x-ms-summary": "Start Date"
+                },
+                "EndDate": {
+                    "type": "string",
+                    "description": "When the quiz closes, in UTC.",
+                    "x-ms-summary": "End Date"
+                },
+                "DueDate": {
+                    "type": "string",
+                    "description": "Due date in UTC.",
+                    "x-ms-summary": "Due Date"
+                },
+                "CategoryId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Quiz category the quiz belongs to.",
+                    "x-ms-summary": "Category ID"
+                },
+                "GradeItemId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Grade item the quiz is linked to.",
+                    "x-ms-summary": "Grade Item ID"
+                },
+                "IsAutoSetGraded": {
+                    "type": "boolean",
+                    "description": "Whether the quiz grade is set automatically.",
+                    "x-ms-summary": "Is Auto Set Graded"
+                }
+            }
+        },
+        "QuizObjectListPage": {
+            "type": "object",
+            "description": "A page of quizzes. Follow the Next URL to read the following page.",
+            "properties": {
+                "Next": {
+                    "type": "string",
+                    "description": "Absolute URL of the next page, or empty when this is the last page.",
+                    "x-ms-summary": "Next"
+                },
+                "Objects": {
+                    "type": "array",
+                    "description": "Quizzes in this page.",
+                    "items": {
+                        "$ref": "#/definitions/Quiz"
+                    }
+                }
+            }
+        }
+    },
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://auth.brightspace.com/oauth2/auth",
+            "tokenUrl": "https://auth.brightspace.com/core/connect/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": []
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.d2l.com/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.d2l.com/legal/privacy/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Education;Productivity"
+        }
+    ]
+}
