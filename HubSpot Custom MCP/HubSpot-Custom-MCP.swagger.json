@@ -1,0 +1,57 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "HubSpot Custom MCP",
+    "description": "Custom MCP server for HubSpot CRM operations including companies, sales reps, emails, sequences, reminders, and contract lifecycles via Copilot Studio.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "api.hubapi.com",
+  "basePath": "/mcp",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "summary": "Invoke HubSpot Custom MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides CRUD tools for HubSpot companies, owners, emails, sequences, tasks, and deals.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "apikey"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Sales and CRM"
+    }
+  ]
+}

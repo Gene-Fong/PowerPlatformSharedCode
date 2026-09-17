@@ -5,7 +5,7 @@
                 "type": "oauthSetting",
                 "oAuthSettings": {
                     "identityProvider": "oauth2",
-                    "clientId": "[[REPLACE_WITH_HUBSPOT_CLIENT_ID]]",
+                    "clientId": "53479497",
                     "scopes": [
                         "crm.objects.companies.read crm.objects.companies.write crm.objects.owners.read crm.objects.deals.read crm.objects.deals.write sales-email-read crm.objects.contacts.read automation crm.schemas.custom.read crm.objects.custom.read crm.objects.custom.write"
                     ],
