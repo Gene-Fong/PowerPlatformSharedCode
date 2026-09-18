@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 public class Script : ScriptBase
 {
     private const string HUBSPOT_BASE = "https://api.hubapi.com";
-    private const string PROTOCOL_VERSION = "2024-11-05";
+    private const string PROTOCOL_VERSION = "2026-09";
     private const string SERVER_NAME = "hubspot-custom-mcp";
     private const string SERVER_VERSION = "1.0.0";
 
@@ -150,6 +150,40 @@ public class Script : ScriptBase
                 Props(P("companyId", "string", "The company record ID to delete", true)),
                 "companyId"),
             Tool("search_companies", "Search HubSpot companies using filters and query.",
+                Props(
+                    P("query", "string", "Text query to search across default searchable properties", false),
+                    P("filterGroups", "array", "Filter groups array with filters [{propertyName, operator, value}]. Operators: EQ, NEQ, LT, LTE, GT, GTE, CONTAINS_TOKEN, NOT_CONTAINS_TOKEN", false),
+                    P("properties", "array", "Array of property names to return in results", false),
+                    P("sorts", "array", "Array of sort objects [{propertyName, direction}] where direction is ASCENDING or DESCENDING", false),
+                    P("limit", "integer", "Max results (1-100, default 10)", false),
+                    P("after", "integer", "Pagination offset", false)
+                )),
+
+            // ── Contacts ────────────────────────────────────────────
+            Tool("list_contacts", "List HubSpot contacts. Returns paginated results with optional property selection.",
+                Props(
+                    P("properties", "string", "Comma-separated property names to return (e.g., firstname,lastname,email,phone)", false),
+                    P("limit", "integer", "Max results per page (1-100, default 10)", false),
+                    P("after", "string", "Pagination cursor from previous response", false)
+                )),
+            Tool("get_contact", "Get a single HubSpot contact by ID.",
+                Props(
+                    P("contactId", "string", "The contact record ID", true),
+                    P("properties", "string", "Comma-separated property names to return", false)
+                ), "contactId"),
+            Tool("create_contact", "Create a new HubSpot contact.",
+                Props(
+                    P("properties", "object", "Contact properties object (e.g., {firstname, lastname, email, phone})", true)
+                ), "properties"),
+            Tool("update_contact", "Update an existing HubSpot contact by ID.",
+                Props(
+                    P("contactId", "string", "The contact record ID to update", true),
+                    P("properties", "object", "Properties to update", true)
+                ), "contactId", "properties"),
+            Tool("delete_contact", "Delete a HubSpot contact by ID (moves to recycling bin).",
+                Props(P("contactId", "string", "The contact record ID to delete", true)),
+                "contactId"),
+            Tool("search_contacts", "Search HubSpot contacts using filters and query.",
                 Props(
                     P("query", "string", "Text query to search across default searchable properties", false),
                     P("filterGroups", "array", "Filter groups array with filters [{propertyName, operator, value}]. Operators: EQ, NEQ, LT, LTE, GT, GTE, CONTAINS_TOKEN, NOT_CONTAINS_TOKEN", false),
@@ -379,6 +413,26 @@ public class Script : ScriptBase
                     break;
                 case "search_companies":
                     result = await SearchObjects("companies", arguments);
+                    break;
+
+                // Contacts
+                case "list_contacts":
+                    result = await ListObjects("contacts", arguments);
+                    break;
+                case "get_contact":
+                    result = await GetObject("contacts", Require(arguments, "contactId"), arguments);
+                    break;
+                case "create_contact":
+                    result = await CreateObject("contacts", arguments);
+                    break;
+                case "update_contact":
+                    result = await UpdateObject("contacts", Require(arguments, "contactId"), arguments);
+                    break;
+                case "delete_contact":
+                    result = await DeleteObject("contacts", Require(arguments, "contactId"));
+                    break;
+                case "search_contacts":
+                    result = await SearchObjects("contacts", arguments);
                     break;
 
                 // Owners (Sales Reps)
@@ -686,8 +740,9 @@ public class Script : ScriptBase
         var request = new HttpRequestMessage(method, url);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        if (this.Context.Request.Headers.Authorization != null)
-            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
+        IEnumerable<string> apiKeyValues;
+        if (this.Context.Request.Headers.TryGetValues("apikey", out apiKeyValues))
+            request.Headers.TryAddWithoutValidation("apikey", apiKeyValues.FirstOrDefault());
 
         if (body != null)
         {
