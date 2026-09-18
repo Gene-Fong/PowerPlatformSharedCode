@@ -1,0 +1,1230 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Dataverse Catalog Tree",
+        "description": "Dual-purpose Dataverse connector for recursive 1:N catalog hierarchies. Exposes an MCP endpoint for Copilot Studio agents plus typed operations for Power Automate and Power Apps. The whole subtree is assembled server-side in a single call, so an agent never has to chain queries or invent relationship names.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "org.crm.dynamics.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/power-apps/developer/data-platform/webapi/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Data;Productivity"
+        }
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Dataverse Catalog Tree MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Exposes catalog traversal tools over JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/catalog/describe": {
+            "get": {
+                "summary": "Describe catalog",
+                "description": "Returns the real hierarchy shape for a table, read from Dataverse metadata: the self-referencing parent lookup if one exists, and every child relationship that can form the next level. Call this once to obtain an exact levels path instead of guessing relationship names.",
+                "operationId": "DescribeCatalog",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Root table logical name or entity set name (for example account or accounts).",
+                        "x-ms-summary": "Root table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetTables",
+                            "value-path": "logicalName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "levels",
+                        "in": "query",
+                        "description": "Optional levels path to validate, for example tst_category_subcategories>tst_subcategory_products.",
+                        "x-ms-summary": "Levels path",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Catalog definition",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogDefinition"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/tree": {
+            "get": {
+                "summary": "Get catalog tree",
+                "description": "Returns a whole subtree in one call. Traversal, depth limiting, cycle detection and child counting all happen server-side, so the caller receives a finished tree rather than a query to continue.",
+                "operationId": "GetTree",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Root table logical name or entity set name.",
+                        "x-ms-summary": "Root table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetTables",
+                            "value-path": "logicalName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Root record GUID. Omit to start from every top-level record.",
+                        "x-ms-summary": "Root record ID",
+                        "type": "string"
+                    },
+                    {
+                        "name": "levels",
+                        "in": "query",
+                        "description": "Ordered relationship path, separated by > . Omit for a self-referencing table, which repeats its own parent lookup at every level.",
+                        "x-ms-summary": "Levels path",
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetChildRelationships",
+                            "parameters": {
+                                "table": {
+                                    "parameter": "table"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "schemaName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "depth",
+                        "in": "query",
+                        "description": "Levels below the root to expand (1-10). Default 3.",
+                        "x-ms-summary": "Depth",
+                        "type": "integer",
+                        "default": 3
+                    },
+                    {
+                        "name": "maxNodes",
+                        "in": "query",
+                        "description": "Node budget for the whole response (1-5000). Default 500. When the budget is hit the response is marked truncated rather than silently cut.",
+                        "x-ms-summary": "Max nodes",
+                        "type": "integer",
+                        "default": 500
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "description": "Extra comma-separated columns to return on every node.",
+                        "x-ms-summary": "Extra fields",
+                        "type": "string"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "OData filter applied to child records at every level.",
+                        "x-ms-summary": "Filter",
+                        "type": "string"
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "description": "Response shape. tree returns nested children, flat returns one row per node with its path, outline returns indented text, all returns every shape.",
+                        "x-ms-summary": "Format",
+                        "type": "string",
+                        "default": "tree",
+                        "enum": [
+                            "tree",
+                            "flat",
+                            "outline",
+                            "all"
+                        ]
+                    },
+                    {
+                        "name": "strategy",
+                        "in": "query",
+                        "description": "Traversal engine. auto picks the cheapest correct one: a single FetchXML hierarchy query when the table has a hierarchical parent lookup, otherwise a batched level walk.",
+                        "x-ms-summary": "Strategy",
+                        "type": "string",
+                        "default": "auto",
+                        "enum": [
+                            "auto",
+                            "hierarchy",
+                            "expand",
+                            "levels"
+                        ]
+                    },
+                    {
+                        "name": "includeChildCounts",
+                        "in": "query",
+                        "description": "Count children of the deepest returned nodes so the caller can report how much was left unexpanded. Default true.",
+                        "x-ms-summary": "Include child counts",
+                        "type": "boolean",
+                        "default": true
+                    },
+                    {
+                        "name": "rootTop",
+                        "in": "query",
+                        "description": "Maximum root records to return when no root record ID is supplied (1-500). Default 50. Exceeding it sets truncationReason to rootLimit.",
+                        "x-ms-summary": "Max roots",
+                        "type": "integer",
+                        "default": 50
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Catalog tree",
+                        "schema": {
+                            "$ref": "#/definitions/TreeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/children": {
+            "get": {
+                "summary": "Get node children",
+                "description": "Returns one level of children for a node. Use this to drill into a branch that Get catalog tree reported as truncated.",
+                "operationId": "GetChildren",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Table of the parent record.",
+                        "x-ms-summary": "Table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetTables",
+                            "value-path": "logicalName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Parent record GUID.",
+                        "x-ms-summary": "Parent record ID",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "relationship",
+                        "in": "query",
+                        "description": "Child relationship schema name. Omit for a self-referencing table.",
+                        "x-ms-summary": "Relationship",
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetChildRelationships",
+                            "parameters": {
+                                "table": {
+                                    "parameter": "table"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "schemaName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "description": "Extra comma-separated columns to return.",
+                        "x-ms-summary": "Extra fields",
+                        "type": "string"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "OData filter applied to the child records.",
+                        "x-ms-summary": "Filter",
+                        "type": "string"
+                    },
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "description": "Maximum children to return (1-1000). Default 100.",
+                        "x-ms-summary": "Top",
+                        "type": "integer",
+                        "default": 100
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Child nodes",
+                        "schema": {
+                            "$ref": "#/definitions/NodeListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/ancestors": {
+            "get": {
+                "summary": "Get node ancestors",
+                "description": "Returns the breadcrumb from a node up to its root, so a caller can state where a record sits without reconstructing the path itself.",
+                "operationId": "GetAncestors",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Table of the record.",
+                        "x-ms-summary": "Table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetTables",
+                            "value-path": "logicalName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Record GUID.",
+                        "x-ms-summary": "Record ID",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "rootTable",
+                        "in": "query",
+                        "description": "Root table of the catalog when levels are heterogeneous.",
+                        "x-ms-summary": "Root table",
+                        "type": "string"
+                    },
+                    {
+                        "name": "levels",
+                        "in": "query",
+                        "description": "Ordered relationship path from the root table, separated by > .",
+                        "x-ms-summary": "Levels path",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ancestor chain",
+                        "schema": {
+                            "$ref": "#/definitions/AncestorsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/search": {
+            "get": {
+                "summary": "Search catalog nodes",
+                "description": "Finds nodes by name across every level of the catalog and returns each match with its full path and ID. Use this to resolve a name the user typed into a real record before traversing.",
+                "operationId": "SearchNodes",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Root table logical name or entity set name.",
+                        "x-ms-summary": "Root table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetTables",
+                            "value-path": "logicalName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Text to match against the primary name column of each level.",
+                        "x-ms-summary": "Search text",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "levels",
+                        "in": "query",
+                        "description": "Ordered relationship path, separated by > . Omit for a self-referencing table.",
+                        "x-ms-summary": "Levels path",
+                        "type": "string"
+                    },
+                    {
+                        "name": "depth",
+                        "in": "query",
+                        "description": "How many levels below the root to search (1-10). Default 5.",
+                        "x-ms-summary": "Depth",
+                        "type": "integer",
+                        "default": 5
+                    },
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "description": "Maximum matches to return (1-100). Default 20.",
+                        "x-ms-summary": "Top",
+                        "type": "integer",
+                        "default": 20
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching nodes",
+                        "schema": {
+                            "$ref": "#/definitions/NodeListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/node": {
+            "post": {
+                "summary": "Create catalog node",
+                "description": "Creates a record and attaches it to a parent node in one call, resolving the correct lookup from relationship metadata.",
+                "operationId": "CreateNode",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "table",
+                                "name"
+                            ],
+                            "properties": {
+                                "table": {
+                                    "type": "string",
+                                    "description": "Table to create the record in.",
+                                    "x-ms-summary": "Table"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Value for the primary name column.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "parentTable": {
+                                    "type": "string",
+                                    "description": "Table of the parent record. Defaults to the same table for a self-referencing catalog.",
+                                    "x-ms-summary": "Parent table"
+                                },
+                                "parentId": {
+                                    "type": "string",
+                                    "description": "Parent record GUID. Omit to create a root node.",
+                                    "x-ms-summary": "Parent record ID"
+                                },
+                                "relationship": {
+                                    "type": "string",
+                                    "description": "Relationship schema name linking parent to child. Resolved automatically when unambiguous.",
+                                    "x-ms-summary": "Relationship"
+                                },
+                                "values": {
+                                    "type": "object",
+                                    "description": "Additional column values to set on the new record.",
+                                    "x-ms-summary": "Additional values"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Created node",
+                        "schema": {
+                            "$ref": "#/definitions/NodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/node/move": {
+            "post": {
+                "summary": "Move catalog node",
+                "description": "Reparents a node. The move is rejected if the new parent sits below the node, which would create a cycle.",
+                "operationId": "MoveNode",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "table",
+                                "id"
+                            ],
+                            "properties": {
+                                "table": {
+                                    "type": "string",
+                                    "description": "Table of the record being moved.",
+                                    "x-ms-summary": "Table"
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "GUID of the record being moved.",
+                                    "x-ms-summary": "Record ID"
+                                },
+                                "newParentId": {
+                                    "type": "string",
+                                    "description": "GUID of the new parent. Omit to detach the node and make it a root.",
+                                    "x-ms-summary": "New parent ID"
+                                },
+                                "parentTable": {
+                                    "type": "string",
+                                    "description": "Table of the new parent. Defaults to the same table for a self-referencing catalog.",
+                                    "x-ms-summary": "Parent table"
+                                },
+                                "relationship": {
+                                    "type": "string",
+                                    "description": "Relationship schema name linking parent to child. Resolved automatically when unambiguous.",
+                                    "x-ms-summary": "Relationship"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Moved node",
+                        "schema": {
+                            "$ref": "#/definitions/NodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/node/update": {
+            "post": {
+                "summary": "Update catalog node",
+                "description": "Rename a node or set other columns on it. Parent lookups are rejected here; use Move catalog node, which carries the cycle guard.",
+                "operationId": "UpdateNode",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "table",
+                                "id"
+                            ],
+                            "properties": {
+                                "table": {
+                                    "type": "string",
+                                    "description": "Table of the record.",
+                                    "x-ms-summary": "Table"
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "Record GUID.",
+                                    "x-ms-summary": "Record ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "New value for the primary name column.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "values": {
+                                    "type": "object",
+                                    "description": "Other column values to set on the record.",
+                                    "x-ms-summary": "Additional values"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated node",
+                        "schema": {
+                            "$ref": "#/definitions/NodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/catalog/node/delete": {
+            "post": {
+                "summary": "Delete catalog node",
+                "description": "Delete a node. Refuses by default when the node has children and reports how many, so nothing is destroyed on a guess. A run that cannot finish within the call budget is refused outright rather than half-deleting a subtree.",
+                "operationId": "DeleteNode",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "table",
+                                "id"
+                            ],
+                            "properties": {
+                                "table": {
+                                    "type": "string",
+                                    "description": "Table of the record.",
+                                    "x-ms-summary": "Table"
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "Record GUID.",
+                                    "x-ms-summary": "Record ID"
+                                },
+                                "onChildren": {
+                                    "type": "string",
+                                    "description": "How to handle children: refuse stops when children exist, reparent attaches them to the node's parent, cascade deletes the whole subtree. reparent and cascade require a self-referencing catalog.",
+                                    "x-ms-summary": "On children",
+                                    "default": "refuse",
+                                    "enum": [
+                                        "refuse",
+                                        "reparent",
+                                        "cascade"
+                                    ]
+                                },
+                                "relationship": {
+                                    "type": "string",
+                                    "description": "Child relationship schema name. Omit for a self-referencing table.",
+                                    "x-ms-summary": "Relationship"
+                                },
+                                "maxNodes": {
+                                    "type": "integer",
+                                    "description": "Ceiling on how many descendants a cascade may delete.",
+                                    "x-ms-summary": "Max nodes",
+                                    "default": 500
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete result",
+                        "schema": {
+                            "$ref": "#/definitions/DeleteNodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/tables": {
+            "get": {
+                "summary": "List tables",
+                "description": "Lists tables in the environment. Used to populate table pickers.",
+                "operationId": "GetTables",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Optional text to match against the table name.",
+                        "x-ms-summary": "Search",
+                        "type": "string"
+                    },
+                    {
+                        "name": "customOnly",
+                        "in": "query",
+                        "description": "Return only custom tables. Default true.",
+                        "x-ms-summary": "Custom tables only",
+                        "type": "boolean",
+                        "default": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tables",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "logicalName": {
+                                        "type": "string",
+                                        "description": "Table logical name."
+                                    },
+                                    "entitySetName": {
+                                        "type": "string",
+                                        "description": "Entity set name used in Web API URLs."
+                                    },
+                                    "displayName": {
+                                        "type": "string",
+                                        "description": "Table display name."
+                                    },
+                                    "primaryIdAttribute": {
+                                        "type": "string",
+                                        "description": "Primary key column."
+                                    },
+                                    "primaryNameAttribute": {
+                                        "type": "string",
+                                        "description": "Primary name column."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/childrelationships": {
+            "get": {
+                "summary": "List child relationships",
+                "description": "Lists the one-to-many relationships that can form the next level below a table.",
+                "operationId": "GetChildRelationships",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Parent table logical name or entity set name.",
+                        "x-ms-summary": "Table",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "customOnly",
+                        "in": "query",
+                        "description": "Return only relationships to custom tables plus self-references. Default true.",
+                        "x-ms-summary": "Custom tables only",
+                        "type": "boolean",
+                        "default": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Child relationships",
+                        "schema": {
+                            "$ref": "#/definitions/RelationshipListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error with the list of valid values",
+                        "schema": {
+                            "$ref": "#/definitions/CatalogError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CatalogError": {
+            "type": "object",
+            "description": "Structured error that names the valid values, so a caller can correct itself instead of guessing.",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "description": "Machine-readable error code."
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Human-readable explanation."
+                },
+                "table": {
+                    "type": "string",
+                    "description": "Table the error relates to."
+                },
+                "providedValue": {
+                    "type": "string",
+                    "description": "The value that could not be resolved."
+                },
+                "validValues": {
+                    "type": "array",
+                    "description": "Values that would have worked.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "value": {
+                                "type": "string",
+                                "description": "Accepted value."
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "What the value refers to."
+                            }
+                        }
+                    }
+                },
+                "hint": {
+                    "type": "string",
+                    "description": "Suggested next call."
+                }
+            }
+        },
+        "RelationshipInfo": {
+            "type": "object",
+            "properties": {
+                "schemaName": {
+                    "type": "string",
+                    "description": "Relationship schema name, used in the levels path."
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Readable label for pickers."
+                },
+                "childTable": {
+                    "type": "string",
+                    "description": "Logical name of the table on the many side."
+                },
+                "childEntitySet": {
+                    "type": "string",
+                    "description": "Entity set name of the child table."
+                },
+                "lookupAttribute": {
+                    "type": "string",
+                    "description": "Lookup column on the child that points at the parent."
+                },
+                "navigationProperty": {
+                    "type": "string",
+                    "description": "Collection-valued navigation property from parent to children."
+                },
+                "isSelfReference": {
+                    "type": "boolean",
+                    "description": "True when parent and child are the same table."
+                },
+                "isHierarchical": {
+                    "type": "boolean",
+                    "description": "True when the relationship is marked hierarchical, which enables single-query subtree retrieval."
+                }
+            }
+        },
+        "RelationshipListResponse": {
+            "type": "object",
+            "properties": {
+                "table": {
+                    "type": "string",
+                    "description": "Parent table logical name."
+                },
+                "totalCount": {
+                    "type": "integer",
+                    "description": "Total relationships found before any cap."
+                },
+                "value": {
+                    "type": "array",
+                    "description": "Child relationships.",
+                    "items": {
+                        "$ref": "#/definitions/RelationshipInfo"
+                    }
+                }
+            }
+        },
+        "CatalogLevel": {
+            "type": "object",
+            "properties": {
+                "depth": {
+                    "type": "integer",
+                    "description": "Level number below the root."
+                },
+                "table": {
+                    "type": "string",
+                    "description": "Table at this level."
+                },
+                "entitySet": {
+                    "type": "string",
+                    "description": "Entity set name at this level."
+                },
+                "relationship": {
+                    "type": "string",
+                    "description": "Relationship schema name that produced this level."
+                },
+                "lookupAttribute": {
+                    "type": "string",
+                    "description": "Lookup column on the child that points at the parent."
+                },
+                "labelAttribute": {
+                    "type": "string",
+                    "description": "Primary name column used as the node label."
+                }
+            }
+        },
+        "CatalogDefinition": {
+            "type": "object",
+            "properties": {
+                "rootTable": {
+                    "type": "string",
+                    "description": "Root table logical name."
+                },
+                "rootEntitySet": {
+                    "type": "string",
+                    "description": "Root table entity set name."
+                },
+                "labelAttribute": {
+                    "type": "string",
+                    "description": "Primary name column of the root table."
+                },
+                "mode": {
+                    "type": "string",
+                    "description": "selfReference when one table points at itself, levels when each depth is a different table."
+                },
+                "repeating": {
+                    "type": "boolean",
+                    "description": "True when the same relationship repeats at every depth."
+                },
+                "hierarchical": {
+                    "type": "boolean",
+                    "description": "True when the parent lookup is marked hierarchical in Dataverse."
+                },
+                "recommendedStrategy": {
+                    "type": "string",
+                    "description": "Traversal engine that auto would choose."
+                },
+                "levelsPath": {
+                    "type": "string",
+                    "description": "Exact levels value to pass to the other operations."
+                },
+                "levels": {
+                    "type": "array",
+                    "description": "Resolved levels.",
+                    "items": {
+                        "$ref": "#/definitions/CatalogLevel"
+                    }
+                },
+                "candidateRelationships": {
+                    "type": "array",
+                    "description": "Relationships that could extend the path by one level.",
+                    "items": {
+                        "$ref": "#/definitions/RelationshipInfo"
+                    }
+                },
+                "notes": {
+                    "type": "array",
+                    "description": "Warnings about the shape of this catalog.",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "TreeNode": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Record GUID. Pass this back verbatim in later calls."
+                },
+                "table": {
+                    "type": "string",
+                    "description": "Table logical name of this node."
+                },
+                "entitySet": {
+                    "type": "string",
+                    "description": "Entity set name of this node."
+                },
+                "label": {
+                    "type": "string",
+                    "description": "Primary name value."
+                },
+                "depth": {
+                    "type": "integer",
+                    "description": "Distance below the root."
+                },
+                "parentId": {
+                    "type": "string",
+                    "description": "GUID of the parent node, empty at the root."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Slash-separated labels from the root to this node."
+                },
+                "childCount": {
+                    "type": "integer",
+                    "description": "Children known to exist. Present even when they were not expanded."
+                },
+                "hasMoreChildren": {
+                    "type": "boolean",
+                    "description": "True when children exist that are not included in this response."
+                },
+                "fields": {
+                    "type": "object",
+                    "description": "Extra columns requested through the fields parameter."
+                },
+                "children": {
+                    "type": "array",
+                    "description": "Expanded child nodes.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Record GUID."
+                            },
+                            "table": {
+                                "type": "string",
+                                "description": "Table logical name."
+                            },
+                            "label": {
+                                "type": "string",
+                                "description": "Primary name value."
+                            },
+                            "depth": {
+                                "type": "integer",
+                                "description": "Distance below the root."
+                            },
+                            "path": {
+                                "type": "string",
+                                "description": "Slash-separated labels from the root."
+                            },
+                            "childCount": {
+                                "type": "integer",
+                                "description": "Children known to exist."
+                            },
+                            "hasMoreChildren": {
+                                "type": "boolean",
+                                "description": "True when children were not all returned."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "TreeStats": {
+            "type": "object",
+            "properties": {
+                "nodeCount": {
+                    "type": "integer",
+                    "description": "Nodes returned, including roots."
+                },
+                "maxDepthReached": {
+                    "type": "integer",
+                    "description": "Deepest level actually returned."
+                },
+                "depthRequested": {
+                    "type": "integer",
+                    "description": "Depth that was asked for."
+                },
+                "truncated": {
+                    "type": "boolean",
+                    "description": "True when the tree is incomplete."
+                },
+                "truncationReason": {
+                    "type": "string",
+                    "description": "Why the tree is incomplete: depthLimit, nodeBudget, pageLimit or requestBudget."
+                },
+                "cyclesDetected": {
+                    "type": "integer",
+                    "description": "Records skipped because they had already been visited."
+                },
+                "strategy": {
+                    "type": "string",
+                    "description": "Traversal engine actually used."
+                },
+                "dataverseRequests": {
+                    "type": "integer",
+                    "description": "Web API calls made to build this response."
+                },
+                "elapsedMs": {
+                    "type": "integer",
+                    "description": "Server-side duration in milliseconds."
+                }
+            }
+        },
+        "TreeResponse": {
+            "type": "object",
+            "properties": {
+                "definition": {
+                    "$ref": "#/definitions/CatalogDefinition"
+                },
+                "stats": {
+                    "$ref": "#/definitions/TreeStats"
+                },
+                "roots": {
+                    "type": "array",
+                    "description": "Root nodes with their expanded children.",
+                    "items": {
+                        "$ref": "#/definitions/TreeNode"
+                    }
+                },
+                "flat": {
+                    "type": "array",
+                    "description": "One row per node, returned when format is flat or all.",
+                    "items": {
+                        "$ref": "#/definitions/TreeNode"
+                    }
+                },
+                "outline": {
+                    "type": "string",
+                    "description": "Indented text rendering of the tree, returned when format is outline or all."
+                }
+            }
+        },
+        "NodeResponse": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "$ref": "#/definitions/TreeNode"
+                },
+                "definition": {
+                    "$ref": "#/definitions/CatalogDefinition"
+                },
+                "updatedColumns": {
+                    "type": "array",
+                    "description": "Columns written by an update.",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "DeleteNodeResponse": {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "type": "boolean",
+                    "description": "True when the node was removed."
+                },
+                "node": {
+                    "$ref": "#/definitions/TreeNode"
+                },
+                "onChildren": {
+                    "type": "string",
+                    "description": "Child handling mode that was applied."
+                },
+                "childrenReparented": {
+                    "type": "integer",
+                    "description": "Children attached to the deleted node's parent."
+                },
+                "descendantsDeleted": {
+                    "type": "integer",
+                    "description": "Descendants removed by a cascade."
+                }
+            }
+        },
+        "NodeListResponse": {
+            "type": "object",
+            "properties": {
+                "definition": {
+                    "$ref": "#/definitions/CatalogDefinition"
+                },
+                "totalCount": {
+                    "type": "integer",
+                    "description": "Number of nodes returned."
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "True when more records exist beyond the ones returned."
+                },
+                "value": {
+                    "type": "array",
+                    "description": "Nodes.",
+                    "items": {
+                        "$ref": "#/definitions/TreeNode"
+                    }
+                }
+            }
+        },
+        "AncestorsResponse": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "$ref": "#/definitions/TreeNode"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Slash-separated labels from the root down to the node."
+                },
+                "depth": {
+                    "type": "integer",
+                    "description": "Distance of the node below its root."
+                },
+                "ancestors": {
+                    "type": "array",
+                    "description": "Ancestors ordered from the root down to the immediate parent.",
+                    "items": {
+                        "$ref": "#/definitions/TreeNode"
+                    }
+                }
+            }
+        }
+    }
+}
