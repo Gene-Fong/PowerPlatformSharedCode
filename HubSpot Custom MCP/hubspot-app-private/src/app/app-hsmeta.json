@@ -4,7 +4,7 @@
   "config": {
     "description": "HubSpot OAuth app for the Custom MCP connector",
     "name": "My Get Started app",
-    "distribution": "marketplace",
+    "distribution": "private",
     "auth": {
       "type": "oauth",
       "redirectUrls": [

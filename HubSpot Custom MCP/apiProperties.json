@@ -1,15 +1,62 @@
 {
     "properties": {
         "connectionParameters": {
-            "api_key": {
+            "token": {
+                "type": "oauthSetting",
+                "oAuthSettings": {
+                    "identityProvider": "oauth2",
+                    "clientId": "809229ff-ddd8-487f-a438-b8147e0cba56",
+                    "scopes": [
+                        "crm.objects.companies.read",
+                        "crm.objects.companies.write",
+                        "crm.objects.owners.read",
+                        "crm.objects.deals.read",
+                        "crm.objects.deals.write",
+                        "sales-email-read",
+                        "crm.objects.contacts.read",
+                        "crm.objects.contacts.write",
+                        "automation",
+                        "crm.schemas.custom.read",
+                        "crm.objects.custom.read",
+                        "crm.objects.custom.write"
+                    ],
+                    "redirectMode": "GlobalPerConnector",
+                    "customParameters": {
+                        "AuthorizationUrl": {
+                            "value": "https://app.hubspot.com/oauth/authorize"
+                        },
+                        "TokenUrl": {
+                            "value": "https://api.hubapi.com/oauth/v3/token"
+                        },
+                        "RefreshUrl": {
+                            "value": "https://api.hubapi.com/oauth/v3/token"
+                        }
+                    }
+                }
+            },
+            "token:clientId": {
+                "type": "string",
+                "uiDefinition": {
+                    "displayName": "Client ID",
+                    "schema": {
+                        "type": "string",
+                        "description": "Client ID from your HubSpot OAuth app"
+                    },
+                    "tooltip": "Found on your HubSpot app's Auth settings page",
+                    "constraints": {
+                        "required": "true"
+                    }
+                }
+            },
+            "token:clientSecret": {
                 "type": "securestring",
                 "uiDefinition": {
-                    "displayName": "HubSpot API key",
+                    "displayName": "Client Secret",
                     "schema": {
                         "type": "securestring",
-                        "description": "Private app access token from HubSpot"
+                        "description": "Client secret from your HubSpot OAuth app"
                     },
-                    "tooltip": "Create or copy a private app access token in HubSpot",
+                    "tooltip": "Found on your HubSpot app's Auth settings page",
                     "constraints": {
                         "required": "true"
                     }

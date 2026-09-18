@@ -37,15 +37,43 @@
 	},
 	"definitions": {},
 	"securityDefinitions": {
-		"api_key": {
-			"type": "apiKey",
-			"in": "header",
-			"name": "apikey"
+		"oauth2": {
+			"type": "oauth2",
+			"flow": "accessCode",
+			"authorizationUrl": "https://app.hubspot.com/oauth/authorize",
+			"tokenUrl": "https://api.hubapi.com/oauth/v3/token",
+			"scopes": {
+				"crm.objects.companies.read": "Read companies",
+				"crm.objects.companies.write": "Write companies",
+				"crm.objects.owners.read": "Read owners",
+				"crm.objects.deals.read": "Read deals",
+				"crm.objects.deals.write": "Write deals",
+				"sales-email-read": "Read sales emails",
+				"crm.objects.contacts.read": "Read contacts",
+				"crm.objects.contacts.write": "Write contacts",
+				"automation": "Sequences automation",
+				"crm.schemas.custom.read": "Read custom object schemas",
+				"crm.objects.custom.read": "Read custom objects",
+				"crm.objects.custom.write": "Write custom objects"
+			}
 		}
 	},
 	"security": [
 		{
-			"api_key": []
+			"oauth2": [
+				"crm.objects.companies.read",
+				"crm.objects.companies.write",
+				"crm.objects.owners.read",
+				"crm.objects.deals.read",
+				"crm.objects.deals.write",
+				"sales-email-read",
+				"crm.objects.contacts.read",
+				"crm.objects.contacts.write",
+				"automation",
+				"crm.schemas.custom.read",
+				"crm.objects.custom.read",
+				"crm.objects.custom.write"
+			]
 		}
 	],
 	"x-ms-connector-metadata": [

@@ -35,18 +35,18 @@ hs project upload  # deploys the app with all scopes and redirect URL pre-config
 
 > **Note:** HubSpot CLI v8 uses the Ink library for terminal rendering and does **not** produce output in the VS Code integrated terminal. Run these commands in a standalone PowerShell or Windows Terminal window.
 
-After uploading, go to **HubSpot Settings → Integrations → Private Apps → HubSpot Custom MCP** to copy the Client ID and Client Secret.
+After uploading, open the app in the HubSpot developer account and copy the Client ID and Client Secret from its **Auth** settings.
 
 **Option B — Developer Portal:**
 
-- Go to [app.hubspot.com](https://app.hubspot.com/) → **Settings** → **Account Setup** → **Integrations** → **Private Apps**
-- Create a new app, select the scopes listed in Prerequisites
+- Go to the [HubSpot developer account](https://developers.hubspot.com/) and open **Apps**
+- Create or open the public app, select the scopes listed in Prerequisites
 - Under **Auth → Redirect URLs**, add your connector's per-connector redirect URL (see step 3 below)
 - Copy the **Client ID** and **Client Secret**
 
 ### 2. Update the connector files
 
-In [apiProperties.json](apiProperties.json), replace `[[REPLACE_WITH_HUBSPOT_CLIENT_ID]]` with your app's Client ID.
+In [apiProperties.json](apiProperties.json), set `properties.connectionParameters.token.oAuthSettings.clientId` to your app's Client ID. It must match the app whose redirect URL and scopes you configured.
 
 ### 3. Deploy the connector
 

@@ -13,7 +13,7 @@ public class Script : ScriptBase
 {
     private const string HUBSPOT_BASE = "https://api.hubapi.com";
     private const string PROTOCOL_VERSION = "2026-09";
-    private const string SERVER_NAME = "hubspot-custom-mcp";
+    private const string SERVER_NAME = "hubspot-custom-mcp2";
     private const string SERVER_VERSION = "1.0.0";
 
     /// <summary>
