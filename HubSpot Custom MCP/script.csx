@@ -406,7 +406,10 @@ public class Script : ScriptBase
                         ["action"] = "reconnect",
                         ["message"] = "Reconnect the HubSpot Custom MCP connection in Power Platform, then sign in to HubSpot again.",
                         ["hubSpotLoginUrl"] = "https://app.hubspot.com/login",
-                        ["powerPlatformConnectionsUrl"] = "https://make.powerapps.com/"
+                        ["powerPlatformConnectionsUrl"] = "https://make.powerapps.com/",
+                        ["retryAfterReconnect"] = true,
+                        ["autoRetry"] = true,
+                        ["loginFlow"] = "hubspot_oauth"
                     };
                     break;
 
@@ -780,10 +783,15 @@ public class Script : ScriptBase
         {
             ["error"] = true,
             ["statusCode"] = (int)statusCode,
-            ["message"] = "HubSpot session expired or the login is invalid. Please reconnect the HubSpot connector and sign in again.",
+            ["message"] = "HubSpot session expired or the login is invalid. Reconnect to HubSpot and retry the sync automatically.",
             ["reconnectTool"] = "reconnect_hubspot",
             ["reason"] = reasonPhrase ?? "",
             ["requiresLogin"] = true,
+            ["retryAfterReconnect"] = true,
+            ["autoRetry"] = true,
+            ["loginUrl"] = "https://app.hubspot.com/login",
+            ["powerPlatformConnectionsUrl"] = "https://make.powerapps.com/",
+            ["loginFlow"] = "hubspot_oauth",
             ["details"] = errorBody ?? new JObject()
         };
     }

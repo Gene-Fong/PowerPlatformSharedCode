@@ -7,6 +7,7 @@ import {
   Text,
 } from '@hubspot/ui-extensions';
 import { hubspot } from '@hubspot/ui-extensions';
+import { useState } from 'react';
 
 interface ExtensionProps {
   context: CrmContext;
@@ -21,13 +22,19 @@ const Extension = ({ context, actions }: ExtensionProps) => {
   const userEmail = context?.user?.email ?? 'current HubSpot user';
   const loginUrl = 'https://app.hubspot.com/login';
   const reauthUrl = 'https://developers.hubspot.com/docs/guides/apps/working-with-oauth';
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   const handleReconnect = () => {
+    setIsReconnecting(true);
     actions.openIframeModal({
       url: loginUrl,
       title: 'HubSpot login',
       width: 'large',
     });
+
+    window.setTimeout(() => {
+      setIsReconnecting(false);
+    }, 2500);
   };
 
   return (
@@ -45,8 +52,8 @@ const Extension = ({ context, actions }: ExtensionProps) => {
         Signed in as: <strong>{userEmail}</strong>
       </Text>
 
-      <Button variant="primary" onClick={handleReconnect}>
-        Reconnect HubSpot access
+      <Button variant="primary" onClick={handleReconnect} disabled={isReconnecting}>
+        {isReconnecting ? 'Reconnecting…' : 'Reconnect HubSpot access'}
       </Button>
 
       <Text>
