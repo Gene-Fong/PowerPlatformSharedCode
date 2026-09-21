@@ -106,7 +106,12 @@ Add this URL to your HubSpot OAuth app's **Redirect URLs** list. If you used the
 - Go to **Actions** → **Add action**
 - Search for "HubSpot Custom MCP" and add it
 
-## Available Tools (36)
+## Available Tools (37)
+
+### Authentication (1 tool)
+| Tool | Description |
+|------|-------------|
+| `reconnect_hubspot` | Returns sign-in and Power Platform reconnect guidance when the OAuth session expires |
 
 ### Companies (6 tools)
 | Tool | Description |

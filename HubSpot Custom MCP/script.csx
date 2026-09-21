@@ -125,6 +125,9 @@ public class Script : ScriptBase
     {
         var tools = new JArray
         {
+            Tool("reconnect_hubspot", "Reconnect the HubSpot Power Platform connection when authentication has expired or sign-in is required.",
+                Props()),
+
             // ── Companies ────────────────────────────────────────────
             Tool("list_companies", "List HubSpot companies. Returns paginated results with optional property selection.",
                 Props(
@@ -395,6 +398,18 @@ public class Script : ScriptBase
             JToken result;
             switch (toolName)
             {
+                // Authentication
+                case "reconnect_hubspot":
+                    result = new JObject
+                    {
+                        ["requiresLogin"] = true,
+                        ["action"] = "reconnect",
+                        ["message"] = "Reconnect the HubSpot Custom MCP connection in Power Platform, then sign in to HubSpot again.",
+                        ["hubSpotLoginUrl"] = "https://app.hubspot.com/login",
+                        ["powerPlatformConnectionsUrl"] = "https://make.powerapps.com/"
+                    };
+                    break;
+
                 // Companies
                 case "list_companies":
                     result = await ListObjects("companies", arguments);
@@ -741,7 +756,7 @@ public class Script : ScriptBase
         if (errorBody == null)
             return false;
 
-        var text = errorBody.ToString(Formatting.None).ToLowerInvariant();
+        var text = errorBody.ToString(Newtonsoft.Json.Formatting.None).ToLowerInvariant();
         var authPatterns = new[]
         {
             "invalid oauth token",
@@ -766,6 +781,7 @@ public class Script : ScriptBase
             ["error"] = true,
             ["statusCode"] = (int)statusCode,
             ["message"] = "HubSpot session expired or the login is invalid. Please reconnect the HubSpot connector and sign in again.",
+            ["reconnectTool"] = "reconnect_hubspot",
             ["reason"] = reasonPhrase ?? "",
             ["requiresLogin"] = true,
             ["details"] = errorBody ?? new JObject()
