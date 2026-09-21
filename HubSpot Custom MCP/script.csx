@@ -733,6 +733,45 @@ public class Script : ScriptBase
         return await SendHubSpotRequest(HttpMethod.Post, url, body);
     }
 
+    private static bool IsExpiredOrInvalidAuthResponse(HttpStatusCode statusCode, JToken errorBody)
+    {
+        if (statusCode == HttpStatusCode.Unauthorized || statusCode == HttpStatusCode.Forbidden)
+            return true;
+
+        if (errorBody == null)
+            return false;
+
+        var text = errorBody.ToString(Formatting.None).ToLowerInvariant();
+        var authPatterns = new[]
+        {
+            "invalid oauth token",
+            "expired token",
+            "invalid token",
+            "oauth-token",
+            "authentication failed",
+            "unauthorized",
+            "token has expired",
+            "login required",
+            "reconnect",
+            "requires login"
+        };
+
+        return authPatterns.Any(pattern => text.Contains(pattern));
+    }
+
+    private static JToken CreateExpiredSessionResponse(JToken errorBody, HttpStatusCode statusCode, string reasonPhrase)
+    {
+        return new JObject
+        {
+            ["error"] = true,
+            ["statusCode"] = (int)statusCode,
+            ["message"] = "HubSpot session expired or the login is invalid. Please reconnect the HubSpot connector and sign in again.",
+            ["reason"] = reasonPhrase ?? "",
+            ["requiresLogin"] = true,
+            ["details"] = errorBody ?? new JObject()
+        };
+    }
+
     // ── HTTP Helper ──────────────────────────────────────────────────────
 
     private async Task<JToken> SendHubSpotRequest(HttpMethod method, string url, JObject body = null)
@@ -765,6 +804,11 @@ public class Script : ScriptBase
             JToken errorBody;
             try { errorBody = JObject.Parse(content); }
             catch { errorBody = content; }
+
+            if (IsExpiredOrInvalidAuthResponse(response.StatusCode, errorBody))
+            {
+                return CreateExpiredSessionResponse(errorBody, response.StatusCode, response.ReasonPhrase);
+            }
 
             return new JObject
             {

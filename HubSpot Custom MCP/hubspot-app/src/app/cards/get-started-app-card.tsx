@@ -1,9 +1,9 @@
 import {
+  Button,
   CrmContext,
   EmptyState,
   ExtensionPointApiActions,
   Link,
-  List,
   Text,
 } from '@hubspot/ui-extensions';
 import { hubspot } from '@hubspot/ui-extensions';
@@ -18,35 +18,44 @@ hubspot.extend<'crm.record.tab'>(({ context, actions }: ExtensionProps) => (
 ));
 
 const Extension = ({ context, actions }: ExtensionProps) => {
-  const appCardDocsLink =
-    'https://developers.hubspot.com/docs/apps/developer-platform/add-features/ui-extensibility/app-cards/overview';
+  const userEmail = context?.user?.email ?? 'current HubSpot user';
+  const loginUrl = 'https://app.hubspot.com/login';
+  const reauthUrl = 'https://developers.hubspot.com/docs/guides/apps/working-with-oauth';
+
+  const handleReconnect = () => {
+    actions.openIframeModal({
+      url: loginUrl,
+      title: 'HubSpot login',
+      width: 'large',
+    });
+  };
 
   return (
-    <>
-      <EmptyState
-        title="Build your app card here!"
-        layout="vertical"
-        imageName="building"
-      >
-        <Text>
-          Add a layer of UI customization to your app by including app cards
-          that can display data, allow users to perform actions, and more. Visit
-          the <Link href={appCardDocsLink}>app card documentation</Link> for
-          more info, or check out the following links to get inspired:
-        </Text>
-        <List variant="unordered-styled">
-          <Link href="https://developers.hubspot.com/docs/platform/ui-components">
-            📖 Explore our library of UI components
-          </Link>
-          <Link href="https://ecosystem.hubspot.com/marketplace/apps/app-cards">
-            📖 Look at the Marketplace collection of apps that contain app cards
-          </Link>
-          <Link href="https://developers.hubspot.com/slack">
-            ▶️ Connect with developers on #ui-extensions channel on developer
-            Slack community
-          </Link>
-        </List>
-      </EmptyState>
-    </>
+    <EmptyState
+      title="HubSpot login"
+      layout="vertical"
+      imageName="shield"
+    >
+      <Text>
+        This custom MCP connector uses HubSpot OAuth. If the token expires or the
+        connection is lost, sign in again to restore access to CRM tools.
+      </Text>
+
+      <Text>
+        Signed in as: <strong>{userEmail}</strong>
+      </Text>
+
+      <Button variant="primary" onClick={handleReconnect}>
+        Reconnect HubSpot access
+      </Button>
+
+      <Text>
+        Need setup help? Review the{' '}
+        <Link href={reauthUrl}>OAuth setup guide</Link> and confirm the redirect
+        URL in the HubSpot app settings.
+      </Text>
+
+      <Link href={loginUrl}>Open HubSpot login</Link>
+    </EmptyState>
   );
 };
