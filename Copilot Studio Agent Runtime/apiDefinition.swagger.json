@@ -1,0 +1,687 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Copilot Studio Agent Runtime",
+    "description": "Call a published Microsoft Copilot Studio agent — including agents on the GitHub Copilot (agentic loop) harness — through the Agentic Runtime third-party Direct-to-Engine endpoint. Start a conversation, send a turn, or ask a one-shot question and get the consolidated answer back as JSON. The connector buffers the server-sent event stream the runtime returns, so Power Automate and Copilot Studio receive a single completed response instead of a stream. Includes MCP support for Copilot Studio agents.",
+    "version": "1.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "placeholder.environment.api.powerplatform.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/copilotstudio/agenticruntime/3p/dataverse-backed/authenticated/bots/{schemaName}/ask": {
+      "post": {
+        "summary": "Ask Agent",
+        "description": "Send a single question to a published Copilot Studio agent and get the completed answer. Opens a conversation, sends the message, waits for the turn to finish, and returns the consolidated reply. Use this when you do not need to keep conversation history between calls.",
+        "operationId": "AskAgent",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "schemaName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The schema name of the published agent, for example cr1a2_myAgent. Find it on the agent's Settings page or in the Direct connection URL.",
+            "x-ms-summary": "Agent Schema Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "1",
+            "description": "Agentic Runtime API version.",
+            "x-ms-summary": "API Version",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The question or instruction to send to the agent.",
+                  "x-ms-summary": "Message"
+                },
+                "locale": {
+                  "type": "string",
+                  "description": "Optional BCP 47 locale for the turn, for example en-US.",
+                  "x-ms-summary": "Locale",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The agent completed the turn.",
+            "schema": {
+              "$ref": "#/definitions/TurnResult"
+            }
+          },
+          "default": {
+            "description": "The runtime rejected the request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResult"
+            }
+          }
+        }
+      }
+    },
+    "/copilotstudio/agenticruntime/3p/dataverse-backed/authenticated/bots/{schemaName}/conversations": {
+      "post": {
+        "summary": "Start Conversation",
+        "description": "Open a new conversation with a published Copilot Studio agent and return the conversation ID along with any greeting activities the agent sends. Pass the conversation ID to Send Message to continue the conversation.",
+        "operationId": "StartConversation",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "schemaName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The schema name of the published agent, for example cr1a2_myAgent.",
+            "x-ms-summary": "Agent Schema Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "1",
+            "description": "Agentic Runtime API version.",
+            "x-ms-summary": "API Version",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "emitStartConversationEvent"
+              ],
+              "properties": {
+                "emitStartConversationEvent": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Ask the runtime to raise the conversation start event so the agent sends its greeting.",
+                  "x-ms-visibility": "internal",
+                  "title": ""
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The conversation was opened.",
+            "schema": {
+              "$ref": "#/definitions/TurnResult"
+            }
+          },
+          "default": {
+            "description": "The runtime rejected the request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResult"
+            }
+          }
+        }
+      }
+    },
+    "/copilotstudio/agenticruntime/3p/dataverse-backed/authenticated/bots/{schemaName}/conversations/{conversationId}": {
+      "post": {
+        "summary": "Send Message",
+        "description": "Send a message to an existing conversation and return the agent's completed reply. Use the conversation ID returned by Start Conversation to keep context across turns.",
+        "operationId": "SendMessage",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "schemaName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The schema name of the published agent, for example cr1a2_myAgent.",
+            "x-ms-summary": "Agent Schema Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The conversation ID returned by Start Conversation.",
+            "x-ms-summary": "Conversation ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "1",
+            "description": "Agentic Runtime API version.",
+            "x-ms-summary": "API Version",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The message to send to the agent.",
+                  "x-ms-summary": "Message"
+                },
+                "locale": {
+                  "type": "string",
+                  "description": "Optional BCP 47 locale for the turn, for example en-US.",
+                  "x-ms-summary": "Locale",
+                  "x-ms-visibility": "advanced"
+                },
+                "activity": {
+                  "type": "object",
+                  "description": "Optional raw activity to send instead of a plain message. Use this for event or invoke activities. When supplied, Message is ignored.",
+                  "x-ms-summary": "Raw Activity",
+                  "x-ms-visibility": "advanced",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "Activity type, for example message, event, or invoke.",
+                      "x-ms-summary": "Activity Type"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the event or invoke activity.",
+                      "x-ms-summary": "Activity Name"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Text carried by the activity.",
+                      "x-ms-summary": "Activity Text"
+                    },
+                    "value": {
+                      "type": "object",
+                      "description": "Arbitrary payload carried by the activity.",
+                      "x-ms-summary": "Activity Value",
+                      "properties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The agent completed the turn.",
+            "schema": {
+              "$ref": "#/definitions/TurnResult"
+            }
+          },
+          "default": {
+            "description": "The runtime rejected the request.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResult"
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "post": {
+        "summary": "Invoke Copilot Studio Agent Runtime MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Exposes tools that let one agent call another published Copilot Studio agent, including agents on the GitHub Copilot harness.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "TurnResult": {
+      "type": "object",
+      "description": "The consolidated result of one conversation turn.",
+      "properties": {
+        "conversationId": {
+          "type": "string",
+          "description": "The conversation ID. Pass this to Send Message to continue the conversation.",
+          "x-ms-summary": "Conversation ID"
+        },
+        "text": {
+          "type": "string",
+          "description": "The agent's answer for this turn, assembled from the streamed activities.",
+          "x-ms-summary": "Answer"
+        },
+        "isComplete": {
+          "type": "boolean",
+          "description": "True when the runtime signalled that the turn finished.",
+          "x-ms-summary": "Turn Complete"
+        },
+        "activityCount": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of activities the runtime streamed for this turn.",
+          "x-ms-summary": "Activity Count"
+        },
+        "attachments": {
+          "type": "array",
+          "description": "Attachments carried by the agent's final message, such as adaptive cards.",
+          "x-ms-summary": "Attachments",
+          "items": {
+            "$ref": "#/definitions/Attachment"
+          }
+        },
+        "suggestedActions": {
+          "type": "array",
+          "description": "Suggested replies offered by the agent.",
+          "x-ms-summary": "Suggested Actions",
+          "items": {
+            "$ref": "#/definitions/CardAction"
+          }
+        },
+        "citations": {
+          "type": "array",
+          "description": "Citations the agent attached to its answer.",
+          "x-ms-summary": "Citations",
+          "items": {
+            "$ref": "#/definitions/Citation"
+          }
+        },
+        "activities": {
+          "type": "array",
+          "description": "Every activity the runtime streamed for this turn, in order.",
+          "x-ms-summary": "Activities",
+          "items": {
+            "$ref": "#/definitions/Activity"
+          }
+        },
+        "greetingActivities": {
+          "type": "array",
+          "description": "Activities the agent sent when the conversation opened. Returned by Ask Agent only, because it opens the conversation and sends the message in one call.",
+          "x-ms-summary": "Greeting Activities",
+          "items": {
+            "$ref": "#/definitions/Activity"
+          }
+        }
+      }
+    },
+    "Activity": {
+      "type": "object",
+      "description": "A single activity streamed by the Agentic Runtime.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Activity type, such as message, typing, or event.",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "description": "Activity identifier.",
+          "x-ms-summary": "Activity ID"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "UTC time the activity was generated.",
+          "x-ms-summary": "Timestamp"
+        },
+        "channelId": {
+          "type": "string",
+          "description": "Channel that produced the activity.",
+          "x-ms-summary": "Channel ID"
+        },
+        "locale": {
+          "type": "string",
+          "description": "Locale of the activity.",
+          "x-ms-summary": "Locale"
+        },
+        "text": {
+          "type": "string",
+          "description": "Text carried by the activity.",
+          "x-ms-summary": "Text"
+        },
+        "textFormat": {
+          "type": "string",
+          "description": "Format of the text, usually markdown or plain.",
+          "x-ms-summary": "Text Format"
+        },
+        "inputHint": {
+          "type": "string",
+          "description": "Whether the agent is expecting input.",
+          "x-ms-summary": "Input Hint"
+        },
+        "replyToId": {
+          "type": "string",
+          "description": "Identifier of the activity this one replies to.",
+          "x-ms-summary": "Reply To ID"
+        },
+        "streamType": {
+          "type": "string",
+          "description": "Streaming role of the activity, such as streaming or final.",
+          "x-ms-summary": "Stream Type"
+        },
+        "streamId": {
+          "type": "string",
+          "description": "Identifier grouping the activities of one streamed response.",
+          "x-ms-summary": "Stream ID"
+        },
+        "streamSequence": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Position of this activity within the stream.",
+          "x-ms-summary": "Stream Sequence"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of an event or invoke activity.",
+          "x-ms-summary": "Name"
+        },
+        "from": {
+          "type": "object",
+          "description": "The account that sent the activity.",
+          "x-ms-summary": "From",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Sender identifier.",
+              "x-ms-summary": "Sender ID"
+            },
+            "name": {
+              "type": "string",
+              "description": "Sender display name.",
+              "x-ms-summary": "Sender Name"
+            },
+            "role": {
+              "type": "string",
+              "description": "Sender role, either user or bot.",
+              "x-ms-summary": "Sender Role"
+            }
+          }
+        },
+        "conversation": {
+          "type": "object",
+          "description": "The conversation the activity belongs to.",
+          "x-ms-summary": "Conversation",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Conversation identifier.",
+              "x-ms-summary": "Conversation ID"
+            }
+          }
+        },
+        "value": {
+          "type": "object",
+          "description": "Arbitrary payload carried by event and invoke activities.",
+          "x-ms-summary": "Value",
+          "properties": {}
+        },
+        "attachments": {
+          "type": "array",
+          "description": "Attachments carried by the activity.",
+          "x-ms-summary": "Attachments",
+          "items": {
+            "$ref": "#/definitions/Attachment"
+          }
+        },
+        "suggestedActions": {
+          "type": "object",
+          "description": "Suggested replies offered with the activity.",
+          "x-ms-summary": "Suggested Actions",
+          "properties": {
+            "actions": {
+              "type": "array",
+              "description": "The suggested actions.",
+              "x-ms-summary": "Actions",
+              "items": {
+                "$ref": "#/definitions/CardAction"
+              }
+            }
+          }
+        },
+        "entities": {
+          "type": "array",
+          "description": "Entities attached to the activity, including citation metadata.",
+          "x-ms-summary": "Entities",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Entity type.",
+                "x-ms-summary": "Entity Type"
+              },
+              "@type": {
+                "type": "string",
+                "description": "Schema.org type of the entity.",
+                "x-ms-summary": "Schema Type"
+              },
+              "@context": {
+                "type": "string",
+                "description": "Schema.org context of the entity.",
+                "x-ms-summary": "Schema Context"
+              },
+              "@id": {
+                "type": "string",
+                "description": "Schema.org identifier of the entity.",
+                "x-ms-summary": "Schema ID"
+              },
+              "citation": {
+                "type": "array",
+                "description": "Citations carried by the entity.",
+                "x-ms-summary": "Citation",
+                "items": {
+                  "$ref": "#/definitions/Citation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Attachment": {
+      "type": "object",
+      "description": "An attachment carried by an activity.",
+      "properties": {
+        "contentType": {
+          "type": "string",
+          "description": "MIME type of the attachment, for example application/vnd.microsoft.card.adaptive.",
+          "x-ms-summary": "Content Type"
+        },
+        "name": {
+          "type": "string",
+          "description": "Attachment name.",
+          "x-ms-summary": "Name"
+        },
+        "contentUrl": {
+          "type": "string",
+          "description": "URL of the attachment content.",
+          "x-ms-summary": "Content URL"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "URL of a thumbnail for the attachment.",
+          "x-ms-summary": "Thumbnail URL"
+        },
+        "content": {
+          "type": "object",
+          "description": "Inline attachment content, such as an adaptive card payload.",
+          "x-ms-summary": "Content",
+          "properties": {}
+        }
+      }
+    },
+    "CardAction": {
+      "type": "object",
+      "description": "A suggested action the user can take.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Action type, for example imBack or openUrl.",
+          "x-ms-summary": "Action Type"
+        },
+        "title": {
+          "type": "string",
+          "description": "Label shown to the user.",
+          "x-ms-summary": "Title"
+        },
+        "text": {
+          "type": "string",
+          "description": "Text associated with the action.",
+          "x-ms-summary": "Text"
+        },
+        "displayText": {
+          "type": "string",
+          "description": "Text echoed into the conversation when the action is taken.",
+          "x-ms-summary": "Display Text"
+        },
+        "value": {
+          "type": "string",
+          "description": "Value sent back to the agent when the action is taken.",
+          "x-ms-summary": "Value"
+        },
+        "image": {
+          "type": "string",
+          "description": "Image shown with the action.",
+          "x-ms-summary": "Image"
+        }
+      }
+    },
+    "Citation": {
+      "type": "object",
+      "description": "A citation supporting part of the agent's answer.",
+      "properties": {
+        "@type": {
+          "type": "string",
+          "description": "Schema.org type of the citation.",
+          "x-ms-summary": "Type"
+        },
+        "position": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Position of the citation within the answer.",
+          "x-ms-summary": "Position"
+        },
+        "appearance": {
+          "type": "object",
+          "description": "How the citation is presented.",
+          "x-ms-summary": "Appearance",
+          "properties": {
+            "@type": {
+              "type": "string",
+              "description": "Schema.org type of the appearance.",
+              "x-ms-summary": "Type"
+            },
+            "name": {
+              "type": "string",
+              "description": "Title of the cited source.",
+              "x-ms-summary": "Name"
+            },
+            "text": {
+              "type": "string",
+              "description": "Cited text.",
+              "x-ms-summary": "Text"
+            },
+            "url": {
+              "type": "string",
+              "description": "Link to the cited source.",
+              "x-ms-summary": "URL"
+            },
+            "abstract": {
+              "type": "string",
+              "description": "Short summary of the cited source.",
+              "x-ms-summary": "Abstract"
+            }
+          }
+        }
+      }
+    },
+    "ErrorResult": {
+      "type": "object",
+      "description": "An error returned by the Agentic Runtime or by this connector.",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32",
+          "description": "HTTP status code returned by the runtime.",
+          "x-ms-summary": "Status"
+        },
+        "message": {
+          "type": "string",
+          "description": "Explanation of what went wrong and how to fix it.",
+          "x-ms-summary": "Message"
+        },
+        "details": {
+          "type": "string",
+          "description": "Raw response body returned by the runtime.",
+          "x-ms-summary": "Details"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "https://api.powerplatform.com/CopilotStudio.Copilots.Invoke": "Invoke Copilot Studio agents"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": [
+        "https://api.powerplatform.com/CopilotStudio.Copilots.Invoke"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/en-us/microsoft-365/agents-sdk/integrate-with-mcs"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Productivity"
+    }
+  ]
+}
